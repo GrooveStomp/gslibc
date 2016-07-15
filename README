@@ -1,0 +1,27 @@
+Motivated by stb, this is my own standard library collection.
+`gs' is short for GrooveStomp - my online handle.
+
+    gs_bool.h:
+    gs_string.h:
+    gs_char.h:
+
+In the future I may add more, like:
+
+    gs_clexer.h
+    gs_cparser.h
+    gs_raster.h
+
+Usage:
+
+    Just drop the file into your project, `#define' a constant for it _once_ and
+    add a `#include "..."'.
+    eg.:
+
+        #define gs_bool
+        #include "gs_bool.h"
+        ...
+
+To Do:
+
+- unicode string and char support?
+- Compact common utilities into a single header file?
