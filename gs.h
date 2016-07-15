@@ -5,8 +5,12 @@
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  ******************************************************************************/
+#define GS_VERSION 0.1.0
+
 #include <stdlib.h>
 #include <string.h> /* memset */
+
+#define ArraySize(Array) (sizeof((Array)) / sizeof((Array)[0]))
 
 /******************************************************************************
  * Boolean Definitions
@@ -137,7 +141,7 @@ gs_StringCopyWithNull(char *Source, char *Dest)
  *
  ******************************************************************************/
 
-#define InitialSize 50
+#define gs_HashMapInitialSize 50
 
 typedef struct gs_hash_map {
         int Count;
@@ -164,10 +168,16 @@ __gs_HashMapCompute(char *Key)
 }
 
 size_t
-gs_NumBytesForNewHashMap(int NumKeys)
+gs_HashMapSpaceRequired(int NumKeys)
 {
+        if(NumKeys == -1)
+        {
+                NumKeys = gs_HashMapInitialSize;
+        }
+
         int SizeOfKeys = sizeof(int) * NumKeys;
-        int SizeToAlloc = SizeOfKeys * 2 + sizeof(gs_hash_map);
+        int SizeOfValues = sizeof(void *) * NumKeys;
+        int SizeToAlloc = SizeOfKeys + SizeOfValues + sizeof(gs_hash_map);
         return(SizeToAlloc);
 }
 
@@ -178,10 +188,10 @@ __gs_HashMapAlloc(int NumKeys, void *Memory)
 
         if(NumKeys == -1)
         {
-                NumKeys = InitialSize;
+                NumKeys = gs_HashMapInitialSize;
         }
 
-        int SizeToAlloc = gs_NumBytesForNewHashMap(NumKeys);
+        int SizeToAlloc = gs_HashMapSpaceRequired(NumKeys);
         int SizeOfKeys = sizeof(int) * NumKeys;
 
         if(Memory == NULL)
