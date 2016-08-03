@@ -12,6 +12,16 @@
 
 #define ArraySize(Array) (sizeof((Array)) / sizeof((Array)[0]))
 
+/* Full credit: http://stackoverflow.com/a/400970 */
+#define ArrayForEach(Item, Array) \
+        for(int Keep##__LINE__ = 1, \
+                Count##__LINE__ = 0, \
+                Index = 0, \
+                Size##__LINE__ = sizeof((Array)) / sizeof(*(Array)); \
+            Keep##__LINE__ && Count##__LINE__ != Size##__LINE__; \
+            Keep##__LINE__ = !Keep##__LINE__, Count##__LINE__++) \
+                for(Item = (Array) + Count##__LINE__; Keep##__LINE__; Keep##__LINE__ = !Keep##__LINE__, Index++)
+
 /******************************************************************************
  * Boolean Definitions
  ******************************************************************************/
@@ -27,44 +37,44 @@ typedef int gs_bool;
  ******************************************************************************/
 
 gs_bool
-gs_IsCharEndOfStream(char C)
+GSIsCharEndOfStream(char C)
 {
 	return(C == '\0');
 }
 
 gs_bool
-gs_IsCharEndOfLine(char C)
+GSIsCharEndOfLine(char C)
 {
 	return((C == '\n') ||
 	       (C == '\r'));
 }
 
 gs_bool
-gs_IsCharWhitespace(char C)
+GSIsCharWhitespace(char C)
 {
 	return((C == ' ') ||
 	       (C == '\t') ||
 	       (C == '\v') ||
 	       (C == '\f') ||
-	       gs_IsCharEndOfLine(C));
+	       GSIsCharEndOfLine(C));
 }
 
 gs_bool
-gs_IsCharOctal(char C)
+GSIsCharOctal(char C)
 {
 	gs_bool Result = (C >= '0' && C <= '7');
 	return(Result);
 }
 
 gs_bool
-gs_IsCharDecimal(char C)
+GSIsCharDecimal(char C)
 {
 	gs_bool Result = (C >= '0' && C <= '9');
 	return(Result);
 }
 
 gs_bool
-gs_IsCharHexadecimal(char C)
+GSIsCharHexadecimal(char C)
 {
 	gs_bool Result = ((C >= '0' && C <= '9') ||
 		       (C >= 'a' && C <= 'f') ||
@@ -73,7 +83,7 @@ gs_IsCharHexadecimal(char C)
 }
 
 gs_bool
-gs_IsCharAlphabetical(char C)
+GSIsCharAlphabetical(char C)
 {
 	gs_bool Result = ((C >= 'a' && C <= 'z') || (C >= 'A' && C <= 'Z'));
 	return(Result);
@@ -86,7 +96,7 @@ gs_IsCharAlphabetical(char C)
  ******************************************************************************/
 
 gs_bool
-gs_IsStringEqual(char *LeftString, char *RightString, int MaxNumToMatch)
+GSStringIsEqual(char *LeftString, char *RightString, int MaxNumToMatch)
 {
 	int NumMatched = 0;
 
@@ -108,7 +118,7 @@ gs_IsStringEqual(char *LeftString, char *RightString, int MaxNumToMatch)
 }
 
 size_t
-gs_StringLength(char *String)
+GSStringLength(char *String)
 {
 	char *P = String;
 	while(*P != '\0') P++;
@@ -116,14 +126,23 @@ gs_StringLength(char *String)
 }
 
 gs_bool
-gs_StringCopyWithNull(char *Source, char *Dest)
+GSStringCopyWithNull(char *Source, char *Dest, int Max)
 {
-        int i = 0;
-        for(; Source[i] != '\0'; i++)
+        int I = 0;
+        for(; Source[I] != '\0' && I < Max; I++)
         {
-                Dest[i] = Source[i];
+                Dest[I] = Source[I];
         }
-        Dest[i] = '\0';
+        Dest[I] = '\0';
+}
+
+gs_bool
+GSStringCopy(char *Source, char *Dest, int Max)
+{
+        for(int I = 0; Source[I] != '\0' && I < Max; I++)
+        {
+                Dest[I] = Source[I];
+        }
 }
 
 /******************************************************************************
@@ -134,14 +153,14 @@ gs_StringCopyWithNull(char *Source, char *Dest)
  *     char *Value = "value";
  *     char *Result = NULL;
  *     gs_bool Found = false;
- *     gs_hash_map Map = gs_HashMapCreate();
- *     gs_HashMapAdd(&Map, "key", (void *)Value);
- *     Found = gs_HashMapGet(&Map, "key", (void *)Result);
+ *     gs_hash_map Map = GSHashMapCreate();
+ *     GSHashMapAdd(&Map, "key", (void *)Value);
+ *     Found = GSHashMapGet(&Map, "key", (void *)Result);
  *     if(Found) printf("Result: %s\n", Result);
  *
  ******************************************************************************/
 
-#define gs_HashMapInitialSize 50
+#define GSHashMapInitialSize 50
 
 typedef struct gs_hash_map {
         int Count;
@@ -151,7 +170,7 @@ typedef struct gs_hash_map {
 } gs_hash_map;
 
 int
-__gs_HashMapCompute(char *Key)
+__GSHashMapCompute(char *Key)
 {
         /*
           sdbm hash function: http://stackoverflow.com/a/14409947
@@ -168,11 +187,11 @@ __gs_HashMapCompute(char *Key)
 }
 
 size_t
-gs_HashMapSpaceRequired(int NumKeys)
+GSHashMapSpaceRequired(int NumKeys)
 {
         if(NumKeys == -1)
         {
-                NumKeys = gs_HashMapInitialSize;
+                NumKeys = GSHashMapInitialSize;
         }
 
         int SizeOfKeys = sizeof(int) * NumKeys;
@@ -182,27 +201,27 @@ gs_HashMapSpaceRequired(int NumKeys)
 }
 
 gs_hash_map *
-__gs_HashMapAlloc(int NumKeys, void *Memory)
+__GSHashMapAlloc(int NumKeys, void *Memory)
 {
         gs_hash_map *NewHash;
 
         if(NumKeys == -1)
         {
-                NumKeys = gs_HashMapInitialSize;
+                NumKeys = GSHashMapInitialSize;
         }
 
-        int SizeToAlloc = gs_HashMapSpaceRequired(NumKeys);
+        int SizeToAlloc = GSHashMapSpaceRequired(NumKeys);
         int SizeOfKeys = sizeof(int) * NumKeys;
 
         if(Memory == NULL)
         {
-                NewHash = (gs_hash_map*)malloc(SizeToAlloc);
+                NewHash = (gs_hash_map*)calloc(1, SizeToAlloc);
         }
         else
         {
                 NewHash = (gs_hash_map*)Memory;
+                memset((void *)NewHash, 0, sizeof(SizeToAlloc));
         }
-        memset((void *)NewHash, 0, sizeof(SizeToAlloc));
 
         NewHash->Keys = (int *)((char *)NewHash + sizeof(gs_hash_map));
         NewHash->Values = (void *)((char *)NewHash + sizeof(gs_hash_map) + SizeOfKeys);
@@ -216,24 +235,24 @@ __gs_HashMapAlloc(int NumKeys, void *Memory)
   Memory:  Memory buffer to place HashMap into. Specify NULL to use malloc.
 */
 gs_hash_map *
-gs_HashMapCreate(int NumKeys, void *Memory) {
-        gs_hash_map *NewHash = __gs_HashMapAlloc(NumKeys, Memory);
+GSHashMapCreate(int NumKeys, void *Memory) {
+        gs_hash_map *NewHash = __GSHashMapAlloc(NumKeys, Memory);
         return(NewHash);
 }
 
 gs_bool
-gs_HashMapAdd(gs_hash_map *Hash, char *Key, void *Value) {
+GSHashMapAdd(gs_hash_map *Hash, char *Key, void *Value) {
         if(Hash->Size == Hash->Count) return false;
 
-        int IntKey = __gs_HashMapCompute(Key);
+        int IntKey = __GSHashMapCompute(Key);
         Hash->Keys[Hash->Count] = IntKey;
         Hash->Values[Hash->Count++] = Value;
         return(true);
 }
 
 gs_bool
-gs_HashMapGet(gs_hash_map *Hash, char *Key, void **Value) {
-        int IntKey = __gs_HashMapCompute(Key);
+GSHashMapGet(gs_hash_map *Hash, char *Key, void **Value) {
+        int IntKey = __GSHashMapCompute(Key);
         for(int i = 0; i < Hash->Count; ++i)
         {
                 if(Hash->Keys[i] == IntKey)
@@ -243,4 +262,66 @@ gs_HashMapGet(gs_hash_map *Hash, char *Key, void **Value) {
                 }
         }
         return(false);
+}
+
+/******************************************************************************
+ * Arg Parsing
+ ******************************************************************************/
+
+gs_bool
+GSArgIsPresent(int Count, char **Args, char *Wanted)
+{
+        int StringLength = GSStringLength(Wanted);
+        for(int I=0; I<Count; I++)
+        {
+                if(GSStringIsEqual(Wanted, Args[I], StringLength))
+                {
+                        return(true);
+                }
+        }
+        return(false);
+}
+
+int /* Returns -1 if Arg not found. */
+GSArgIndex(int Count, char **Args, char *Wanted)
+{
+        int StringLength = GSStringLength(Wanted);
+        for(int I=0; I<Count; I++)
+        {
+                if(GSStringIsEqual(Wanted, Args[I], StringLength))
+                {
+                        return(I);
+                }
+        }
+        return(-1);
+}
+
+char * /* Returns NULL if Index is invalid. */
+GSArgAtIndex(int Count, char **Args, int Index)
+{
+        if((Index < 0) ||
+           (Index > (Count - 1)))
+                return(NULL);
+        else
+                return(Args[Index]);
+}
+
+char * /* Returns NULL if Marker is not found or no trailing arg. */
+GSArgAfter(int Count, char **Args, char *Marker)
+{
+        int Index = GSArgIndex(Count, Args, Marker);
+        if(Index < 0) return(NULL);
+
+        char *Arg = GSArgAtIndex(Count, Args, Index + 1);
+        return(Arg);
+}
+
+gs_bool
+GSArgHelpWanted(int Count, char **Args)
+{
+        if(GSArgIsPresent(Count, Args, "-h") ||
+           GSArgIsPresent(Count, Args, "--help"))
+                return(true);
+        else
+                return(false);
 }
