@@ -1,7 +1,7 @@
 /******************************************************************************
  * File: gs.h
  * Created: 2016-07-14
- * Last Updated: 2016-07-14
+ * Last Updated: 2016-08-04
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  ******************************************************************************/
@@ -37,44 +37,44 @@ typedef int gs_bool;
  ******************************************************************************/
 
 gs_bool
-GSIsCharEndOfStream(char C)
+GSCharIsEndOfStream(char C)
 {
 	return(C == '\0');
 }
 
 gs_bool
-GSIsCharEndOfLine(char C)
+GSCharIsEndOfLine(char C)
 {
 	return((C == '\n') ||
 	       (C == '\r'));
 }
 
 gs_bool
-GSIsCharWhitespace(char C)
+GSCharIsWhitespace(char C)
 {
 	return((C == ' ') ||
 	       (C == '\t') ||
 	       (C == '\v') ||
 	       (C == '\f') ||
-	       GSIsCharEndOfLine(C));
+	       GSCharIsEndOfLine(C));
 }
 
 gs_bool
-GSIsCharOctal(char C)
+GSCharIsOctal(char C)
 {
 	gs_bool Result = (C >= '0' && C <= '7');
 	return(Result);
 }
 
 gs_bool
-GSIsCharDecimal(char C)
+GSCharIsDecimal(char C)
 {
 	gs_bool Result = (C >= '0' && C <= '9');
 	return(Result);
 }
 
 gs_bool
-GSIsCharHexadecimal(char C)
+GSCharIsHexadecimal(char C)
 {
 	gs_bool Result = ((C >= '0' && C <= '9') ||
 		       (C >= 'a' && C <= 'f') ||
@@ -83,10 +83,17 @@ GSIsCharHexadecimal(char C)
 }
 
 gs_bool
-GSIsCharAlphabetical(char C)
+GSCharIsAlphabetical(char C)
 {
 	gs_bool Result = ((C >= 'a' && C <= 'z') || (C >= 'A' && C <= 'Z'));
 	return(Result);
+}
+
+gs_bool
+GSCharIsAlphanumeric(char C)
+{
+        gs_bool Result = GSCharIsAlphabetical(C) || GSCharIsDecimal(C);
+        return(Result);
 }
 
 /******************************************************************************
