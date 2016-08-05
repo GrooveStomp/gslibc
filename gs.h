@@ -1,7 +1,7 @@
 /******************************************************************************
  * File: gs.h
  * Created: 2016-07-14
- * Last Updated: 2016-08-04
+ * Last Updated: 2016-08-05
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  ******************************************************************************/
@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <string.h> /* memset */
+#include <stdarg.h> /* va_list */
 
 #define ArraySize(Array) (sizeof((Array)) / sizeof((Array)[0]))
 
@@ -22,13 +23,24 @@
             Keep##__LINE__ = !Keep##__LINE__, Count##__LINE__++) \
                 for(Item = (Array) + Count##__LINE__; Keep##__LINE__; Keep##__LINE__ = !Keep##__LINE__, Index++)
 
+void
+GSAbortWithMessage(char *FormatString, ...)
+{
+        va_list Args;
+        va_start(Args, FormatString);
+        fprintf(stderr, FormatString, Args);
+        exit(EXIT_FAILURE);
+}
+
 /******************************************************************************
  * Boolean Definitions
  ******************************************************************************/
 
 typedef int gs_bool;
+#ifndef false
 #define false 0
 #define true !false
+#endif
 
 /******************************************************************************
  * Character Definitions
@@ -135,21 +147,47 @@ GSStringLength(char *String)
 gs_bool
 GSStringCopyWithNull(char *Source, char *Dest, int Max)
 {
+        if(Source == NULL || Dest == NULL)
+        {
+                return(false);
+        }
+
         int I = 0;
         for(; Source[I] != '\0' && I < Max; I++)
         {
                 Dest[I] = Source[I];
         }
         Dest[I] = '\0';
+
+        return(true);
 }
 
 gs_bool
 GSStringCopy(char *Source, char *Dest, int Max)
 {
+        if(Source == NULL || Dest == NULL)
+        {
+                return(false);
+        }
+
         for(int I = 0; Source[I] != '\0' && I < Max; I++)
         {
                 Dest[I] = Source[I];
         }
+
+        return(true);
+}
+
+char *
+GSStringRemoveLeadingWhitespace(char *String)
+{
+        while(GSCharIsWhitespace(String[0]))
+        {
+                if(String[0] == '\0') break;
+                String++;
+        }
+
+        return(String);
 }
 
 /******************************************************************************
