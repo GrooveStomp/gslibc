@@ -359,16 +359,19 @@ void
 TestArgIsPresent()
 {
         const int Count = 2;
-        char *Args[Count];
-        Args[0] = "arg1";
-        Args[1] = "arg2";
+        char *Params[Count];
+        Params[0] = "arg1";
+        Params[1] = "arg2";
+
+        gs_args Args;
+        GSArgInit(&Args, Count, Params);
 
         char *Wanted = "arg1";
-        gs_bool Result = GSArgIsPresent(Count, Args, Wanted);
+        gs_bool Result = GSArgIsPresent(&Args, Wanted);
         Assert(Result == true, "Arg(%s) is found", Wanted);
 
         Wanted = "arg3";
-        Result = GSArgIsPresent(Count, Args, Wanted);
+        Result = GSArgIsPresent(&Args, Wanted);
         Assert(Result == false, "Arg(%s) is not found", Wanted);
 }
 
@@ -376,16 +379,19 @@ void
 TestArgIndex()
 {
         const int Count = 2;
-        char *Args[Count];
-        Args[0] = "arg1";
-        Args[1] = "arg2";
+        char *Params[Count];
+        Params[0] = "arg1";
+        Params[1] = "arg2";
+
+        gs_args Args;
+        GSArgInit(&Args, Count, Params);
 
         char *Arg = "arg1";
-        int Index = GSArgIndex(Count, Args, Arg);
+        int Index = GSArgIndex(&Args, Arg);
         Assert(Index == 0, "Arg(%s) is at index(%i)", Arg, Index);
 
         Arg = "arg3";
-        Index = GSArgIndex(Count, Args, Arg);
+        Index = GSArgIndex(&Args, Arg);
         Assert(Index == -1, "Arg(%s) is not found", Arg);
 }
 
@@ -393,20 +399,23 @@ void
 TestArgAtIndex()
 {
         const int Count = 2;
-        char *Args[Count];
-        Args[0] = "arg1";
-        Args[1] = "arg2";
+        char *Params[Count];
+        Params[0] = "arg1";
+        Params[1] = "arg2";
+
+        gs_args Args;
+        GSArgInit(&Args, Count, Params);
 
         int Index = 0;
-        char *Arg = GSArgAtIndex(Count, Args, Index);
+        char *Arg = GSArgAtIndex(&Args, Index);
         Assert(GSStringIsEqual(Arg, "arg1", 4), "Arg(%s) is at index(%i)", Arg, Index);
 
         Index = -1;
-        Arg = GSArgAtIndex(Count, Args, Index);
+        Arg = GSArgAtIndex(&Args, Index);
         Assert(Arg == NULL, "Arg(%s) is not found", Arg);
 
         Index = 2;
-        Arg = GSArgAtIndex(Count, Args, Index);
+        Arg = GSArgAtIndex(&Args, Index);
         Assert(Arg == NULL, "Arg(%s) is not found", Arg);
 }
 
@@ -414,20 +423,23 @@ void
 TestArgAfter()
 {
         const int Count = 2;
-        char *Args[Count];
-        Args[0] = "arg1";
-        Args[1] = "arg2";
+        char *Params[Count];
+        Params[0] = "arg1";
+        Params[1] = "arg2";
+
+        gs_args Args;
+        GSArgInit(&Args, Count, Params);
 
         char *Arg = "arg1";
-        char *After = GSArgAfter(Count, Args, Arg);
+        char *After = GSArgAfter(&Args, Arg);
         Assert(GSStringIsEqual(After, "arg2", 4), "Arg(%s) follows Arg(%s)", After, Arg);
 
         Arg = "arg2";
-        After = GSArgAfter(Count, Args, Arg);
+        After = GSArgAfter(&Args, Arg);
         Assert(After == NULL, "No argument follows Arg(%s)", Arg);
 
         Arg = "What?";
-        After = GSArgAfter(Count, Args, Arg);
+        After = GSArgAfter(&Args, Arg);
         Assert(After == NULL, "No argument follows Arg(%s)", Arg);
 }
 
@@ -435,19 +447,99 @@ void
 TestArgHelpWanted()
 {
         const int Count = 2;
-        char *Args[Count];
-        Args[0] = "-h";
-        Args[1] = "arg2";
-        gs_bool Result = GSArgHelpWanted(Count, Args);
+        char *Params[Count];
+        Params[0] = "-h";
+        Params[1] = "arg2";
+
+        gs_args Args;
+        GSArgInit(&Args, Count, Params);
+
+        gs_bool Result = GSArgHelpWanted(&Args);
         Assert(Result == true, "-h or --help is present");
 
-        Args[0] = "--help";
-        Result = GSArgHelpWanted(Count, Args);
+        Params[0] = "--help";
+        Result = GSArgHelpWanted(&Args);
         Assert(Result == true, "-h or --help is present");
 
-        Args[0] = "arg1";
-        Result = GSArgHelpWanted(Count, Args);
+        Params[0] = "arg1";
+        Result = GSArgHelpWanted(&Args);
         Assert(Result == false, "-h or --help is not present");
+}
+
+/******************************************************************************
+ * Byte Streams and Buffers
+ ******************************************************************************/
+
+void
+TestBufferInit()
+{
+        gs_buffer Buffer;
+        char Memory[25];
+        GSBufferInit(&Buffer, Memory, 25);
+        Assert(Buffer.Start == Memory, "Buffer starts at Memory");
+        Assert(Buffer.Cursor == Memory, "Buffer Cursor is at Start");
+        Assert(Buffer.Length == 0, "Buffer has zero length");
+        Assert(Buffer.Capacity == 25, "Buffer has proper Capacity");
+}
+
+void
+TestBufferIsEOF()
+{
+        gs_bool IsEOF;
+        gs_buffer Buffer;
+        char Memory[25];
+        GSBufferInit(&Buffer, Memory, 25);
+
+        Buffer.Length = 1;
+        IsEOF = GSBufferIsEOF(&Buffer);
+        Assert(IsEOF == false, "Buffer is not EOF");
+
+        Buffer.Cursor++;
+        IsEOF = GSBufferIsEOF(&Buffer);
+        Assert(IsEOF == true, "Buffer is EOF");
+}
+
+void
+TestBufferNextLine()
+{
+        gs_buffer Buffer;
+        char *Text = "This\nIs\nSome\nText\n";
+        GSBufferInit(&Buffer, Text, GSStringLength(Text));
+
+        Assert(GSStringIsEqual(Text, Buffer.Start, GSStringLength(Text)), "Buffer is unmodified");
+
+        GSBufferNextLine(&Buffer);
+        Assert(GSStringIsEqual("Is\nSome\nText\n", Buffer.Cursor, GSStringLength("Is\nSome\nText\n")), "Buffer is advanced to next line");
+}
+
+void
+TestFileSize()
+{
+        FILE *File = fopen("temp.txt", "w");
+        fwrite("Test\n", 1, 5, File);
+        fclose(File);
+
+        int FileSize = GSFileSize("temp.txt");
+        Assert(FileSize == 5, "Size of file (%i) is 5", FileSize);
+        remove("temp.txt");
+}
+
+void
+TestFileCopyToBuffer()
+{
+        FILE *File = fopen("temp.txt", "w");
+        fwrite("Test\n", 1, 5, File);
+        fclose(File);
+
+        int FileSize = GSFileSize("temp.txt");
+        gs_buffer Buffer;
+        GSBufferInit(&Buffer, (char *)alloca(FileSize), FileSize);
+        GSFileCopyToBuffer("temp.txt", &Buffer);
+        remove("temp.txt");
+
+        Assert(Buffer.Length == FileSize, "Entire file contents were copied.");
+        Assert(GSBufferIsEOF(&Buffer), "Buffer cursor is at end of file in memory.");
+        Assert(GSStringIsEqual(Buffer.Start, "Test\n", FileSize), "File text was copied correctly.");
 }
 
 int
@@ -485,6 +577,12 @@ main(int ArgCount, char **Args)
         TestArgAtIndex();
         TestArgAfter();
         TestArgHelpWanted();
+        /* Byte Streams and Buffers */
+        TestBufferInit();
+        TestBufferIsEOF();
+        TestBufferNextLine();
+        TestFileSize();
+        TestFileCopyToBuffer();
 
         printf("All tests passed\n");
         return(EXIT_SUCCESS);

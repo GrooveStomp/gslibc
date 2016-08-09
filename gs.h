@@ -360,13 +360,32 @@ GSHashMapGet(gs_hash_map *Hash, char *Key, void **Value) {
  * Arg Parsing
  ******************************************************************************/
 
+typedef struct gs_args
+{
+        int Count;
+        char **Args;
+} gs_args;
+
+void
+GSArgInit(gs_args *Self, int ArgCount, char **Args)
+{
+        Self->Count = ArgCount;
+        Self->Args = Args;
+}
+
+char *
+GSArgProgramName(gs_args *Self)
+{
+        return(Self->Args[0]);
+}
+
 gs_bool
-GSArgIsPresent(int Count, char **Args, char *Wanted)
+GSArgIsPresent(gs_args *Args, char *Wanted)
 {
         int StringLength = GSStringLength(Wanted);
-        for(int I=0; I<Count; I++)
+        for(int I=0; I<Args->Count; I++)
         {
-                if(GSStringIsEqual(Wanted, Args[I], StringLength))
+                if(GSStringIsEqual(Wanted, Args->Args[I], StringLength))
                 {
                         return(true);
                 }
@@ -375,12 +394,12 @@ GSArgIsPresent(int Count, char **Args, char *Wanted)
 }
 
 int /* Returns -1 if Arg not found. */
-GSArgIndex(int Count, char **Args, char *Wanted)
+GSArgIndex(gs_args *Args, char *Wanted)
 {
         int StringLength = GSStringLength(Wanted);
-        for(int I=0; I<Count; I++)
+        for(int I=0; I<Args->Count; I++)
         {
-                if(GSStringIsEqual(Wanted, Args[I], StringLength))
+                if(GSStringIsEqual(Wanted, Args->Args[I], StringLength))
                 {
                         return(I);
                 }
@@ -389,31 +408,110 @@ GSArgIndex(int Count, char **Args, char *Wanted)
 }
 
 char * /* Returns NULL if Index is invalid. */
-GSArgAtIndex(int Count, char **Args, int Index)
+GSArgAtIndex(gs_args *Args, int Index)
 {
         if((Index < 0) ||
-           (Index > (Count - 1)))
+           (Index > (Args->Count - 1)))
                 return(NULL);
         else
-                return(Args[Index]);
+                return(Args->Args[Index]);
 }
 
 char * /* Returns NULL if Marker is not found or no trailing arg. */
-GSArgAfter(int Count, char **Args, char *Marker)
+GSArgAfter(gs_args *Args, char *Marker)
 {
-        int Index = GSArgIndex(Count, Args, Marker);
+        int Index = GSArgIndex(Args, Marker);
         if(Index < 0) return(NULL);
 
-        char *Arg = GSArgAtIndex(Count, Args, Index + 1);
+        char *Arg = GSArgAtIndex(Args, Index + 1);
         return(Arg);
 }
 
 gs_bool
-GSArgHelpWanted(int Count, char **Args)
+GSArgHelpWanted(gs_args *Args)
 {
-        if(GSArgIsPresent(Count, Args, "-h") ||
-           GSArgIsPresent(Count, Args, "--help"))
+        if(GSArgIsPresent(Args, "-h") ||
+           GSArgIsPresent(Args, "--help"))
                 return(true);
         else
                 return(false);
+}
+
+/******************************************************************************
+ * Byte streams / Buffers / File IO
+ ******************************************************************************/
+
+typedef struct gs_buffer
+{
+        char *Start;
+        char *Cursor;
+        size_t Capacity;
+        size_t Length;
+} gs_buffer;
+
+gs_buffer *
+GSBufferInit(gs_buffer *Buffer, char *Start, size_t Size)
+{
+        Buffer->Start = Start;
+        Buffer->Cursor = Start;
+        Buffer->Length = 0;
+        Buffer->Capacity = Size;
+        return(Buffer);
+}
+
+gs_bool
+GSBufferIsEOF(gs_buffer *Buffer)
+{
+        int Size = Buffer->Cursor - Buffer->Start;
+        gs_bool Result = Size >= Buffer->Length;
+        return(Result);
+}
+
+void
+GSBufferNextLine(gs_buffer *Buffer)
+{
+        while(true)
+        {
+                if(Buffer->Cursor[0] == '\n' ||
+                   Buffer->Cursor[0] == '\0')
+                {
+                        break;
+                }
+                Buffer->Cursor++;
+        }
+        Buffer->Cursor++;
+}
+
+size_t
+GSFileSize(char *FileName)
+{
+        size_t FileSize = 0;
+        FILE *File = fopen(FileName, "r");
+        if(File != NULL)
+        {
+                fseek(File, 0, SEEK_END);
+                FileSize = ftell(File);
+                fclose(File);
+        }
+        return(FileSize);
+}
+
+gs_bool
+GSFileCopyToBuffer(char *FileName, gs_buffer *Buffer)
+{
+        FILE *File = fopen(FileName, "r");
+        if(File == NULL) return(false);
+
+        fseek(File, 0, SEEK_END);
+        size_t FileSize = ftell(File);
+        int Remaining = (Buffer->Start + Buffer->Capacity) - Buffer->Cursor;
+        if(FileSize > Remaining) return(false);
+
+        fseek(File, 0, SEEK_SET);
+        fread(Buffer->Cursor, 1, FileSize, File);
+        Buffer->Length += FileSize;
+        Buffer->Cursor += FileSize;
+        *(Buffer->Cursor) = '\0';
+
+        return(true);
 }
