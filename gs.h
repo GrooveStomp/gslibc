@@ -1,20 +1,39 @@
 /******************************************************************************
  * File: gs.h
  * Created: 2016-07-14
- * Last Updated: 2016-08-05
+ * Last Updated: 2016-08-09
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
+ *-----------------------------------------------------------------------------
+ *
+ * Standard library for personal use. Heavily influenced by Sean Barrett's stb.
+ *
  ******************************************************************************/
 #define GS_VERSION 0.1.0
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h> /* memset */
 #include <stdarg.h> /* va_list */
 
-#define ArraySize(Array) (sizeof((Array)) / sizeof((Array)[0]))
+#define GSArraySize(Array) (sizeof((Array)) / sizeof((Array)[0]))
 
-/* Full credit: http://stackoverflow.com/a/400970 */
-#define ArrayForEach(Item, Array) \
+/******************************************************************************
+ * Usage:
+ *
+ * int Numbers[] = { 1, 2, 3, 4, 5 };
+ * GSArrayForEach(int *Number, Numbers)
+ * {
+ *         printf("Number[%i]: %i\n", Index, *Number);
+ * }
+ *
+ * NOTE:
+ * The variable `Index' is automatically generated for you.
+ * `Item' must be a pointer to the type of variable used in the Array.
+ *
+ * Implementation taken from: http://stackoverflow.com/a/400970
+ ******************************************************************************/
+#define GSArrayForEach(Item, Array) \
         for(int Keep##__LINE__ = 1, \
                 Count##__LINE__ = 0, \
                 Index = 0, \
@@ -22,6 +41,9 @@
             Keep##__LINE__ && Count##__LINE__ != Size##__LINE__; \
             Keep##__LINE__ = !Keep##__LINE__, Count##__LINE__++) \
                 for(Item = (Array) + Count##__LINE__; Keep##__LINE__; Keep##__LINE__ = !Keep##__LINE__, Index++)
+
+#define GSMax(A, B) ((A) < (B) ? (B) : (A))
+#define GSMin(A, B) ((A) < (B) ? (A) : (B))
 
 void
 GSAbortWithMessage(char *FormatString, ...)
@@ -178,16 +200,41 @@ GSStringCopy(char *Source, char *Dest, int Max)
         return(true);
 }
 
-char *
-GSStringRemoveLeadingWhitespace(char *String)
+unsigned int /* Returns number of bytes copied. */
+GSStringCopyWithoutSurroundingWhitespace(char *Source, char *Dest, unsigned int MaxLength)
 {
-        while(GSCharIsWhitespace(String[0]))
+        int FirstChar, LastChar;
+        for(FirstChar = 0; GSCharIsWhitespace(Source[FirstChar]); FirstChar++);
+
+        int StringLength = GSStringLength(Source);
+        for(LastChar = StringLength - 1; GSCharIsWhitespace(Source[LastChar]); LastChar--);
+
+        int Count = 0;
+        for(int S=FirstChar; S<=LastChar && Count < MaxLength; Count++, S++)
         {
-                if(String[0] == '\0') break;
-                String++;
+                Dest[Count] = Source[S];
         }
 
-        return(String);
+        return(Count);
+}
+
+unsigned int /* Returns number of bytes copied. */
+GSStringCopyWithoutSurroundingWhitespaceWithNull(char *Source, char *Dest, unsigned int MaxLength)
+{
+        int FirstChar, LastChar;
+        for(FirstChar = 0; GSCharIsWhitespace(Source[FirstChar]); FirstChar++);
+
+        int StringLength = GSStringLength(Source);
+        for(LastChar = StringLength - 1; GSCharIsWhitespace(Source[LastChar]); LastChar--);
+
+        int Count = 0;
+        for(int S=FirstChar; S<=LastChar && Count < MaxLength; Count++, S++)
+        {
+                Dest[Count] = Source[S];
+        }
+        Dest[Count] = '\0';
+
+        return(Count);
 }
 
 /******************************************************************************

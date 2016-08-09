@@ -30,6 +30,52 @@ AssertFn(int LineNumber, const char *FuncName, int Expression, char *FormatStrin
 }
 
 /******************************************************************************
+ * Miscellaneous Macros
+ *****************************************************************************/
+void
+TestArraySize()
+{
+        int Numbers[] = { 1, 2, 3, 4, 5 };
+        int Size = GSArraySize(Numbers);
+        Assert(Size == 5, "Number of elements in `Numbers' is 5");
+}
+
+void
+TestArrayForEach()
+{
+        int Numbers[] = { 1, 2, 3, 4, 5 };
+        int AssertionIndex = 0;
+        GSArrayForEach(int *Number, Numbers)
+        {
+                Assert(Index == AssertionIndex, "Index is set to %i", AssertionIndex);
+                Assert(*Number == Numbers[Index], "Numbers is index properly");
+                AssertionIndex++;
+        }
+}
+
+void
+TestMax()
+{
+        int Result;
+
+        Result = GSMax(1, 2);
+        Assert(Result == 2, "Max chooses the larger value");
+        Result = GSMax(2, 1);
+        Assert(Result == 2, "Max chooses the larger value");
+}
+
+void
+TestMin()
+{
+        int Result;
+
+        Result = GSMin(1, 2);
+        Assert(Result == 1, "Max chooses the smaller value");
+        Result = GSMin(2, 1);
+        Assert(Result == 1, "Max chooses the smaller value");
+}
+
+/******************************************************************************
  * Boolean interface
  ******************************************************************************/
 
@@ -215,6 +261,38 @@ TestStringCopyWithNull()
         Assert(GSStringIsEqual("hello", Buffer, GSStringLength(Buffer)), "hello == %s", Buffer);
 }
 
+void
+TestStringCopyWithoutSurroundingWhitespace()
+{
+        char Buffer[256];
+        char *Source = "   Hello there    ";
+        int StringLength = GSStringLength(Source);
+
+        memset(Buffer, 0, 256);
+        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, 4);
+        Assert(GSStringIsEqual("Hell", Buffer, 4), "Hell == %s", Buffer);
+
+        memset(Buffer, 0, 256);
+        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, StringLength);
+        Assert(GSStringIsEqual("Hello there", Buffer, GSStringLength("Hello there")), "Hello there == %s", Buffer);
+}
+
+void
+TestStringCopyWithoutSurroundingWhitespaceWithNull()
+{
+        char Buffer[256];
+        char *Source = "   Hello there    ";
+        int StringLength = GSStringLength(Source);
+
+        memset(Buffer, 1, 256); /* Set buffer to 1 so it's not NULL-terminated by default. */
+        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, 4);
+        Assert(GSStringIsEqual("Hell", Buffer, 4), "Hell == %s", Buffer);
+
+        memset(Buffer, 1, 256); /* Set buffer to 1 so it's not NULL-terminated by default. */
+        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, StringLength);
+        Assert(GSStringIsEqual("Hello there", Buffer, GSStringLength("Hello there")), "Hello there == %s", Buffer);
+}
+
 /******************************************************************************
  * Hash Map interface
  ******************************************************************************/
@@ -259,12 +337,12 @@ TestHashMap()
 
         char *Keys[] = { "Key1", "Key2", "Key3" };
         char *Values[] = { "Value1", "Value2", "Value3" };
-        for(int i = 0; i < ArraySize(Keys); i++)
+        for(int i = 0; i < GSArraySize(Keys); i++)
         {
                 GSHashMapAdd(Map, Keys[i], (void *)Values[i]);
         }
 
-        for(int i = 0; i < ArraySize(Keys); i++)
+        for(int i = 0; i < GSArraySize(Keys); i++)
         {
                 char *Value;
                 gs_bool Found = GSHashMapGet(Map, Keys[i], (void *)&Value);
@@ -375,6 +453,11 @@ TestArgHelpWanted()
 int
 main(int ArgCount, char **Args)
 {
+        /* Miscellaneous Macros */
+        TestArraySize();
+        TestArrayForEach();
+        TestMax();
+        TestMin();
         /* Boolean */
         TestFalse();
         TestTrue();
@@ -390,6 +473,8 @@ main(int ArgCount, char **Args)
         TestStringIsEqual();
         TestStringLength();
         TestStringCopyWithNull();
+        TestStringCopyWithoutSurroundingWhitespace();
+        TestStringCopyWithoutSurroundingWhitespaceWithNull();
         /* Hash Map */
         TestHashMapSpaceRequired();
         TestHashMapCreate();
