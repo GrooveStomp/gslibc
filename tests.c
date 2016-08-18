@@ -21,7 +21,7 @@ AssertFn(int LineNumber, const char *FuncName, int Expression, char *FormatStrin
                 va_list Arg;
                 va_start(Arg, FormatString);
 
-                char Suffix[512];
+                char Suffix[512] = { 0 };
                 snprintf(Suffix, 512, FormatString, Arg);
                 fprintf(stderr, "Assertion failed in %s() at line #%d: %s\n", FuncName, LineNumber, Suffix);
 
@@ -238,6 +238,42 @@ TestCharIsAlphanumeric()
         Assert(!GSCharIsAlphanumeric('\0'), "'\0' is not alphanumeric");
 }
 
+void
+TestCharUpcase()
+{
+        char *Chars = "aA_1wW";
+
+        Assert(GSCharUpcase(*Chars) == 'A', "'a' is Upcased to 'A'");
+        Chars++;
+        Assert(GSCharUpcase(*Chars) == 'A', "'A' is not changed");
+        Chars++;
+        Assert(GSCharUpcase(*Chars) == '_', "'_' is not changed");
+        Chars++;
+        Assert(GSCharUpcase(*Chars) == '1', "'1' is not changed");
+        Chars++;
+        Assert(GSCharUpcase(*Chars) == 'W', "'w' is Upcased to 'W'");
+        Chars++;
+        Assert(GSCharUpcase(*Chars) == 'W', "'W' is not changed");
+}
+
+void
+TestCharDowncase()
+{
+        char *Chars = "aA_1wW";
+
+        Assert(GSCharDowncase(*Chars) == 'a', "'a' is not changed");
+        Chars++;
+        Assert(GSCharDowncase(*Chars) == 'a', "'A' is Downcased to 'a'");
+        Chars++;
+        Assert(GSCharDowncase(*Chars) == '_', "'_' is not changed");
+        Chars++;
+        Assert(GSCharDowncase(*Chars) == '1', "'1' is not changed");
+        Chars++;
+        Assert(GSCharDowncase(*Chars) == 'w', "'w' is not changed");
+        Chars++;
+        Assert(GSCharDowncase(*Chars) == 'w', "'W' is Downcased to 'w'");
+}
+
 /******************************************************************************
  * String interface
  ******************************************************************************/
@@ -297,6 +333,33 @@ TestStringCopyWithoutSurroundingWhitespaceWithNull()
         memset(Buffer, 1, 256); /* Set buffer to 1 so it's not NULL-terminated by default. */
         GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, StringLength);
         Assert(GSStringIsEqual("Hello there", Buffer, GSStringLength("Hello there")), "Hello there == %s", Buffer);
+}
+
+void
+TestStringCapitalize()
+{
+        char *String;
+        char Result[256];
+
+        String = "_hello_there_";
+        memset(Result, 0, 256);
+        GSStringCapitalize(String, Result, GSStringLength(String));
+        Assert(GSStringIsEqual("HelloThere", Result, GSStringLength(Result)), "HelloThere == %s", Result);
+
+        String = "alllowercase";
+        memset(Result, 0, 256);
+        GSStringCapitalize(String, Result, GSStringLength(String));
+        Assert(GSStringIsEqual("Alllowercase", Result, GSStringLength(Result)), "Alllowercase == %s", Result);
+
+        String = "_123abc\\\"'abc123";
+        memset(Result, 0, 256);
+        GSStringCapitalize(String, Result, GSStringLength(String));
+        Assert(GSStringIsEqual("123abcabc123", Result, GSStringLength(Result)), "123abcabc123 == %s", Result);
+
+        String = "CapitalizedExample";
+        memset(Result, 0, 256);
+        GSStringCapitalize(String, Result, GSStringLength(String));
+        Assert(GSStringIsEqual("Capitalizedexample", Result, GSStringLength(Result)), "Capitalizedexample == %s", Result);
 }
 
 /******************************************************************************
@@ -591,12 +654,16 @@ main(int ArgCount, char **Args)
         TestCharIsDecimal();
         TestCharIsHexadecimal();
         TestCharIsAlphabetical();
+        TestCharIsAlphanumeric();
+        TestCharUpcase();
+        TestCharDowncase();
         /* String */
         TestStringIsEqual();
         TestStringLength();
         TestStringCopyWithNull();
         TestStringCopyWithoutSurroundingWhitespace();
         TestStringCopyWithoutSurroundingWhitespaceWithNull();
+        TestStringCapitalize();
         /* Hash Map */
         TestHashMapSpaceRequired();
         TestHashMapCreate();
