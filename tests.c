@@ -33,6 +33,12 @@ AssertFn(int LineNumber, const char *FuncName, int Expression, char *FormatStrin
  * Miscellaneous Macros
  *****************************************************************************/
 void
+TestAbortWithMessage()
+{
+        /* TODO(AARON): Not sure how to actually test this! */
+}
+
+void
 TestArraySize()
 {
         int Numbers[] = { 1, 2, 3, 4, 5 };
@@ -513,6 +519,29 @@ TestBufferNextLine()
 }
 
 void
+TestBufferSaveCursor()
+{
+        gs_buffer Buffer;
+        char *Text = "This\nIs\nSome\nText\n";
+        GSBufferInit(&Buffer, Text, GSStringLength(Text));
+        GSBufferSaveCursor(&Buffer);
+        GSBufferNextLine(&Buffer);
+        Assert(GSStringIsEqual(Text, Buffer.SavedCursor, GSStringLength(Text)), "SavedCursor is original text.");
+}
+
+void
+TestBufferRestoreCursor()
+{
+        gs_buffer Buffer;
+        char *Text = "This\nIs\nSome\nText\n";
+        GSBufferInit(&Buffer, Text, GSStringLength(Text));
+        GSBufferSaveCursor(&Buffer);
+        GSBufferNextLine(&Buffer);
+        GSBufferRestoreCursor(&Buffer);
+        Assert(GSStringIsEqual(Text, Buffer.Cursor, GSStringLength(Text)), "Cursor is restored.");
+}
+
+void
 TestFileSize()
 {
         FILE *File = fopen("temp.txt", "w");
@@ -546,6 +575,7 @@ int
 main(int ArgCount, char **Args)
 {
         /* Miscellaneous Macros */
+        TestAbortWithMessage();
         TestArraySize();
         TestArrayForEach();
         TestMax();
@@ -581,6 +611,8 @@ main(int ArgCount, char **Args)
         TestBufferInit();
         TestBufferIsEOF();
         TestBufferNextLine();
+        TestBufferSaveCursor();
+        TestBufferRestoreCursor();
         TestFileSize();
         TestFileCopyToBuffer();
 
