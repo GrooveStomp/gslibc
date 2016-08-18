@@ -1,0 +1,15 @@
+gslibc License
+
+All of the source code for gslibc are Copyright 2016 by Aaron Oman, and
+rights are reserved. Anyone who has access to the source code of gslibc is
+granted a personal, non-assignable, non-transferable, non-commercial license to
+use the source code for their own personal educational purposes.  Any other use,
+including any redistribution in whole or in part, requires explicit, written
+permission from Aaron Oman.
+
+gslibc and its source materials are provided "as is" without warranty of any
+kind, either express or implied, including without limitation any implied
+warranties of condition, uninterrupted use, merchantability, fitness for a
+particular purpose, or non-infringement.
+
+Contact Aaron Oman: groovestomp@groovestomp.com
