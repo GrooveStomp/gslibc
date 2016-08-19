@@ -11,7 +11,7 @@
         }
 
 unsigned int /* Memory should be MaxLength size, at least. */
-GSTestRandomString(char *Memory, unsigned int MaxLength, unsigned int MinLength)
+GSTestRandomString(char *Memory, unsigned int MinLength, unsigned int MaxLength)
 {
         int Length = rand() % (MaxLength - MinLength) + MinLength;
         int Range = 'z' - 'a';

@@ -13,12 +13,41 @@
 #include <stdarg.h>
 
 /******************************************************************************
+ gstest
+*******************************************************************************/
+void
+TestAssert()
+{
+        /* NOTE: Commented out because this exits on failure! */
+        /* GSTestAssert(1 == 2, "Expect %i to equal %i\n", 1, 2); */
+}
+
+void
+TestRandomString()
+{
+        char String[256];
+
+        memset(String, 0, 256);
+        for(int I=0; I<25; I++)
+        {
+                int Length = GSTestRandomString(String, 5, 15);
+                GSTestAssert(Length >= 5, "%i >= 5\n", Length);
+                GSTestAssert(Length <= 15, "%i <= 15\n", Length);
+                for(int K=0; K<Length; K++)
+                {
+                        GSTestAssert(GSCharIsAlphabetical(String[K]), "%c is a char\n", String[K]);
+                }
+        }
+}
+
+/******************************************************************************
  * Miscellaneous Macros
  *****************************************************************************/
 void
 TestAbortWithMessage()
 {
-        /* TODO(AARON): Not sure how to actually test this! */
+        /* NOTE: Commented out because this exits on failure! */
+        /* GSAbortWithMessage("%s expected to equal %s\n", "Hello", "Not Hello"); */
 }
 
 void
@@ -775,6 +804,14 @@ TestFileCopyToBuffer()
 int
 main(int ArgCount, char **Args)
 {
+        /**********************************************************************
+          gstest
+         **********************************************************************/
+        TestAssert();
+        TestRandomString();
+        /**********************************************************************
+          gslibc
+         **********************************************************************/
         /* Miscellaneous Macros */
         TestAbortWithMessage();
         TestArraySize();

@@ -27,7 +27,7 @@ function build() {
         cflags="$cflags -Wno-format-contains-nul -Wno-format-security"
     fi
 
-    echo "gcc $cflags -o \"env/build/$executable\" \"$cfile\""
+    # echo "gcc $cflags -o \"env/build/$executable\" \"$cfile\""
     gcc $cflags -o "env/build/$executable" "$cfile"
 }
 
