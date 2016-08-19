@@ -21,8 +21,14 @@ function build() {
     local executable=$(basename "$cfile")
     executable="${executable%.*}"
     echo "$executable" > env/executable-name
+    local cflags="-std=c99 -pedantic-errors -fextended-identifiers -g -x c"
 
-    gcc -std=c99 -pedantic-errors -fextended-identifiers -g -x c -o "env/build/$executable" "$cfile"
+    if [[ "tests" == "$executable" ]]; then
+        cflags="$cflags -Wno-format-contains-nul -Wno-format-security"
+    fi
+
+    echo "gcc $cflags -o \"env/build/$executable\" \"$cfile\""
+    gcc $cflags -o "env/build/$executable" "$cfile"
 }
 
 function run() {

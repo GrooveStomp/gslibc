@@ -1,7 +1,7 @@
 /******************************************************************************
  * File: gs.h
  * Created: 2016-07-14
- * Last Updated: 2016-08-18
+ * Last Updated: 2016-08-19
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  *-----------------------------------------------------------------------------
@@ -50,17 +50,14 @@
                 char String##__LINE__[256];                             \
                 sprintf(String##__LINE__, "In %s() at line #%i: ", __func__, __LINE__); \
                 fprintf(stderr, String##__LINE__);                       \
-                __GSAbortWithMessage(__VA_ARGS__);                      \
+                fprintf(stderr, __VA_ARGS__); \
+                exit(EXIT_FAILURE); \
         }
 
-void
-__GSAbortWithMessage(char *FormatString, ...)
-{
-        va_list Args;
-        va_start(Args, FormatString);
-        fprintf(stderr, FormatString, Args);
-        exit(EXIT_FAILURE);
-}
+#define GS1024Inverse 1.0/1024
+#define GSBytesToKilobytes(X) (X) * GS1024Inverse
+#define GSBytesToMegabytes(X) GSBytesToKilobytes((X)) * GS1024Inverse
+#define GSBytesToGigabytes(X) GSBytesToMegabytes((X)) * GS1024Inverse
 
 /******************************************************************************
  * Boolean Definitions
@@ -322,117 +319,237 @@ GSStringCapitalize(char *Source, char *Dest, unsigned int SourceLength)
  *
  * Usage:
  *     char *Value = "value";
- *     char *Result = NULL;
- *     gs_bool Found = false;
- *     gs_hash_map Map = GSHashMapCreate();
- *     GSHashMapAdd(&Map, "key", (void *)Value);
- *     Found = GSHashMapGet(&Map, "key", (void *)Result);
- *     if(Found) printf("Result: %s\n", Result);
- *
+ *     int StringLength = 256;
+ *     int NumElements = 13;
+ *     size_t BytesRequired = GSHashMapBytesRequired(StringLength, NumElements);
+ *     gs_hash_map *Map = GSHashMapInit(alloca(BytesRequired), StringLength, NumElements);
+ *     GSHashMapAdd(Map, "key", Value);
+ *     if(GSHashMapHasKey(Map, "key"))
+ *     {
+ *         char *Result = (char *)GSHashMapGet(Map, "key");
+ *         printf("Key(%s), Value(%s)\n", "key", Result);
+ *     }
  ******************************************************************************/
+typedef struct gs_hash_map
+{
+        unsigned int Count;
+        size_t AllocatedBytes;
+        unsigned int Capacity;
+        unsigned int MaxKeyLength;
 
-#define GSHashMapInitialSize 50
-
-typedef struct gs_hash_map {
-        int Count;
-        int Size;
-        int *Keys;
-        void *(*Values);
+        char *Keys;
+        void **Values;
 } gs_hash_map;
 
-int
-__GSHashMapCompute(char *Key)
+unsigned int /* String must be a NULL-terminated string */
+__GSHashMapComputeHash(gs_hash_map *Self, char *String)
 {
         /*
           sdbm hash function: http://stackoverflow.com/a/14409947
         */
-        int HashAddress = 0;
-        for(int Counter = 0; Key[Counter] != '\0'; Counter++)
+        unsigned int HashAddress = 0;
+        for(unsigned int Counter = 0; String[Counter] != '\0'; Counter++)
         {
-                HashAddress = Key[Counter] +
+                HashAddress = String[Counter] +
                         (HashAddress << 6) +
                         (HashAddress << 16) -
                         HashAddress;
         }
-        return(HashAddress);
+        unsigned int Result = HashAddress % Self->Capacity;
+        return(Result);
 }
 
 size_t
-GSHashMapSpaceRequired(int NumKeys)
+GSHashMapBytesRequired(unsigned int MaxKeyLength, unsigned int NumEntries)
 {
-        if(NumKeys == -1)
-        {
-                NumKeys = GSHashMapInitialSize;
-        }
-
-        int SizeOfKeys = sizeof(int) * NumKeys;
-        int SizeOfValues = sizeof(void *) * NumKeys;
-        int SizeToAlloc = SizeOfKeys + SizeOfValues + sizeof(gs_hash_map);
-        return(SizeToAlloc);
+        int AllocSize =
+                sizeof(gs_hash_map) +
+                (sizeof(char) * MaxKeyLength * NumEntries) +
+                (sizeof(void *) * NumEntries);
 }
 
 gs_hash_map *
-__GSHashMapAlloc(int NumKeys, void *Memory)
+GSHashMapInit(void *Memory, unsigned int MaxKeyLength, unsigned int NumEntries)
 {
-        gs_hash_map *NewHash;
+        gs_hash_map *Self = (gs_hash_map *)Memory;
 
-        if(NumKeys == -1)
-        {
-                NumKeys = GSHashMapInitialSize;
-        }
+        char *KeyValueMemory = (char *)Memory + sizeof(gs_hash_map);
 
-        int SizeToAlloc = GSHashMapSpaceRequired(NumKeys);
-        int SizeOfKeys = sizeof(int) * NumKeys;
+        Self->MaxKeyLength = MaxKeyLength;
+        Self->Capacity = NumEntries;
+        Self->AllocatedBytes = GSHashMapBytesRequired(MaxKeyLength, NumEntries);
+        Self->Count = 0;
 
-        if(Memory == NULL)
-        {
-                NewHash = (gs_hash_map*)calloc(1, SizeToAlloc);
-        }
-        else
-        {
-                NewHash = (gs_hash_map*)Memory;
-                memset((void *)NewHash, 0, sizeof(SizeToAlloc));
-        }
+        int KeysMemLength = MaxKeyLength * NumEntries;
 
-        NewHash->Keys = (int *)((char *)NewHash + sizeof(gs_hash_map));
-        NewHash->Values = (void *)((char *)NewHash + sizeof(gs_hash_map) + SizeOfKeys);
-        NewHash->Size = NumKeys;
+        Self->Keys = KeyValueMemory;
+        memset(Self->Keys, 0, KeysMemLength);
 
-        return(NewHash);
+        Self->Values = (void **)(Self->Keys + KeysMemLength);
+        memset(Self->Values, 0, (sizeof(void **) * NumEntries));
+
+        return(Self);
 }
 
 /*
-  NumKeys: Number of initial key/value pairs expected. Specify -1 to use default.
-  Memory:  Memory buffer to place HashMap into. Specify NULL to use malloc.
-*/
-gs_hash_map *
-GSHashMapCreate(int NumKeys, void *Memory) {
-        gs_hash_map *NewHash = __GSHashMapAlloc(NumKeys, Memory);
-        return(NewHash);
+  Input: Key as string
+  Computation: Hash key value into an integer.
+  Algorithm: Open-addressing hash. Easy to predict space usage.
+             See: https://en.wikipedia.org/wiki/Open_addressing
+  Key must be a NULL terminated string.
+ */
+gs_bool
+GSHashMapAdd(gs_hash_map *Self, char *Key, void *Value)
+{
+        if(Self->Count >= Self->Capacity) return(false);
+
+        unsigned int KeyLength = GSStringLength(Key);
+        unsigned int HashIndex = __GSHashMapComputeHash(Self, Key);
+        if(Self->Keys[HashIndex * Self->MaxKeyLength] == '\0')
+        {
+                GSStringCopyWithNull(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
+                Self->Values[HashIndex] = Value;
+                Self->Count++;
+                return(true);
+        }
+
+        unsigned int StartHash = HashIndex;
+        HashIndex = (HashIndex + 1) % Self->Capacity;
+
+        while(true)
+        {
+                if(HashIndex == StartHash) break;
+
+                if(Self->Keys[HashIndex * Self->MaxKeyLength] == '\0')
+                {
+                        GSStringCopyWithNull(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
+                        Self->Values[HashIndex] = Value;
+                        Self->Count++;
+                        return(true);
+                }
+                HashIndex = (HashIndex + 1) % Self->Capacity;
+        }
+
+        return(false);
 }
 
-gs_bool
-GSHashMapAdd(gs_hash_map *Hash, char *Key, void *Value) {
-        if(Hash->Size == Hash->Count) return false;
+gs_bool /* Memory must be large enough for the resized Hash. Memory _cannot_ overlap! */
+GSHashMapGrow(gs_hash_map **Self, unsigned int NumEntries, void *New)
+{
+        gs_hash_map *Old = *Self;
 
-        int IntKey = __GSHashMapCompute(Key);
-        Hash->Keys[Hash->Count] = IntKey;
-        Hash->Values[Hash->Count++] = Value;
+        /* No point in making smaller... */
+        if(NumEntries <= Old->Capacity) return(false);
+        if(New == NULL) return(false);
+
+        *Self = GSHashMapInit(New, Old->MaxKeyLength, NumEntries);
+        for(int I=0; I<Old->Capacity; I++)
+        {
+                char *Key = &Old->Keys[I * Old->MaxKeyLength];
+                char *Value = (char *)(Old->Values[I]);
+                if(Key != NULL)
+                {
+                        gs_bool Success = GSHashMapAdd(*Self, Key, Value);
+                        if(!Success)
+                                GSAbortWithMessage("This should have worked!\n");
+                }
+        }
+
         return(true);
 }
 
-gs_bool
-GSHashMapGet(gs_hash_map *Hash, char *Key, void **Value) {
-        int IntKey = __GSHashMapCompute(Key);
-        for(int i = 0; i < Hash->Count; ++i)
+gs_bool /* Wanted must be a NULL terminated string */
+GSHashMapHasKey(gs_hash_map *Self, char *Wanted)
+{
+        unsigned int HashIndex = __GSHashMapComputeHash(Self, Wanted);
+        char *Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+        if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
         {
-                if(Hash->Keys[i] == IntKey)
-                {
-                        *Value = Hash->Values[i];
-                        return true;
-                }
+                return(true);
         }
+
+        unsigned int StartHash = HashIndex;
+        HashIndex = (HashIndex + 1) % Self->Capacity;
+
+        while(true)
+        {
+                if(HashIndex == StartHash) break;
+
+                Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+                if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
+                {
+                        return(true);
+                }
+                HashIndex = (HashIndex + 1) % Self->Capacity;
+        }
+
         return(false);
+}
+
+void * /* Wanted must be a NULL terminated string */
+GSHashMapGet(gs_hash_map *Self, char *Wanted)
+{
+        unsigned int HashIndex = __GSHashMapComputeHash(Self, Wanted);
+        char *Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+        if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
+        {
+                void *Result = Self->Values[HashIndex];
+                return(Result);
+        }
+
+        unsigned int StartHash = HashIndex;
+        HashIndex = (HashIndex + 1) % Self->Capacity;
+
+        while(true)
+        {
+                if(HashIndex == StartHash) break;
+
+                Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+                if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
+                {
+                        void *Result = Self->Values[HashIndex];
+                        return(Result);
+                }
+                HashIndex = (HashIndex + 1) % Self->Capacity;
+        }
+
+        return(NULL);
+}
+
+void * /* Wanted must be a NULL terminated string */
+GSHashMapDelete(gs_hash_map *Self, char *Wanted)
+{
+        unsigned int HashIndex = __GSHashMapComputeHash(Self, Wanted);
+        char *Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+        if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
+        {
+                void *Result = Self->Values[HashIndex];
+                Self->Values[HashIndex] = NULL;
+                Self->Keys[HashIndex * Self->MaxKeyLength] = '\0';
+                Self->Count--;
+                return(Result);
+        }
+
+        unsigned int StartHash = HashIndex;
+        HashIndex = (HashIndex + 1) % Self->Capacity;
+
+        while(true)
+        {
+                if(HashIndex == StartHash) break;
+
+                Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+                if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
+                {
+                        void *Result = Self->Values[HashIndex];
+                        Self->Values[HashIndex] = NULL;
+                        Self->Keys[HashIndex * Self->MaxKeyLength] = '\0';
+                        Self->Count--;
+                        return(Result);
+                }
+                HashIndex = (HashIndex + 1) % Self->Capacity;
+        }
+
+        return(NULL);
 }
 
 /******************************************************************************
