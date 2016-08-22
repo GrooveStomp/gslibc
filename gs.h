@@ -199,6 +199,13 @@ GSStringIsEqual(char *LeftString, char *RightString, int MaxNumToMatch)
 {
 	int NumMatched = 0;
 
+        if(*LeftString == GSNullChar ||
+           *RightString == GSNullChar &&
+           *LeftString != *RightString)
+        {
+                return(false);
+        }
+
 	while(NumMatched < MaxNumToMatch)
 	{
 		if(*LeftString == *RightString)
@@ -456,7 +463,7 @@ GSStringReject(char *Source, char *Dest, unsigned int MaxLength, GSStringFilterF
  *     int NumElements = 13;
  *     size_t BytesRequired = GSHashMapBytesRequired(StringLength, NumElements);
  *     gs_hash_map *Map = GSHashMapInit(alloca(BytesRequired), StringLength, NumElements);
- *     GSHashMapAdd(Map, "key", Value);
+ *     GSHashMapSet(Map, "key", Value);
  *     if(GSHashMapHasKey(Map, "key"))
  *     {
  *         char *Result = (char *)GSHashMapGet(Map, "key");
@@ -481,7 +488,7 @@ __GSHashMapComputeHash(gs_hash_map *Self, char *String)
           sdbm hash function: http://stackoverflow.com/a/14409947
         */
         unsigned int HashAddress = 0;
-        for(unsigned int Counter = 0; String[Counter] != '\0'; Counter++)
+        for(unsigned int Counter = 0; String[Counter] != GSNullChar; Counter++)
         {
                 HashAddress = String[Counter] +
                         (HashAddress << 6) +
@@ -524,25 +531,38 @@ GSHashMapInit(void *Memory, unsigned int MaxKeyLength, unsigned int NumEntries)
         return(Self);
 }
 
-/*
-  Input: Key as string
-  Computation: Hash key value into an integer.
-  Algorithm: Open-addressing hash. Easy to predict space usage.
-             See: https://en.wikipedia.org/wiki/Open_addressing
-  Key must be a NULL terminated string.
- */
 gs_bool
-GSHashMapAdd(gs_hash_map *Self, char *Key, void *Value)
+__GSHashMapUpdate(gs_hash_map *Self, char *Key, void *Value)
 {
-        if(Self->Count >= Self->Capacity) return(false);
-
         unsigned int KeyLength = GSStringLength(Key);
         unsigned int HashIndex = __GSHashMapComputeHash(Self, Key);
-        if(Self->Keys[HashIndex * Self->MaxKeyLength] == '\0')
+
+        unsigned int StartHash = HashIndex;
+
+        do
         {
-                GSStringCopy(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
-                Self->Values[HashIndex] = Value;
-                Self->Count++;
+                if(GSStringIsEqual(&Self->Keys[HashIndex * Self->MaxKeyLength],
+                                   Key,
+                                   GSStringLength(Key)))
+                {
+                        Self->Values[HashIndex] = Value;
+                        return(true);
+                }
+                HashIndex = (HashIndex + 1) % Self->Capacity;
+        }
+        while(HashIndex != StartHash);
+
+        /* Couldn't find Key to update. */
+        return(false);
+}
+
+gs_bool /* Wanted must be a NULL terminated string */
+GSHashMapHasKey(gs_hash_map *Self, char *Wanted)
+{
+        unsigned int HashIndex = __GSHashMapComputeHash(Self, Wanted);
+        char *Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+        if(GSStringIsEqual(Wanted, Key, GSStringLength(Wanted)))
+        {
                 return(true);
         }
 
@@ -553,7 +573,56 @@ GSHashMapAdd(gs_hash_map *Self, char *Key, void *Value)
         {
                 if(HashIndex == StartHash) break;
 
-                if(Self->Keys[HashIndex * Self->MaxKeyLength] == '\0')
+                Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
+                if(GSStringIsEqual(Wanted, Key, GSStringLength(Wanted)))
+                {
+                        return(true);
+                }
+                HashIndex = (HashIndex + 1) % Self->Capacity;
+        }
+
+        return(false);
+}
+
+/*
+  Input: Key as string
+  Computation: Hash key value into an integer.
+  Algorithm: Open-addressing hash. Easy to predict space usage.
+             See: https://en.wikipedia.org/wiki/Open_addressing
+  Key must be a NULL terminated string.
+ */
+gs_bool
+GSHashMapSet(gs_hash_map *Self, char *Key, void *Value)
+{
+        unsigned int KeyLength = GSStringLength(Key);
+        unsigned int HashIndex = __GSHashMapComputeHash(Self, Key);
+
+        if(GSHashMapHasKey(Self, Key))
+        {
+                return __GSHashMapUpdate(Self, Key, Value);
+        }
+
+        /* We're not updating, so return false if we're at capacity. */
+        if(Self->Count >= Self->Capacity) return(false);
+
+        /* Add a brand-new key in. */
+        if(Self->Keys[HashIndex * Self->MaxKeyLength] == GSNullChar)
+        {
+                GSStringCopy(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
+                Self->Values[HashIndex] = Value;
+                Self->Count++;
+                return(true);
+        }
+
+        /* We have a collision! Find a free index. */
+        unsigned int StartHash = HashIndex;
+        HashIndex = (HashIndex + 1) % Self->Capacity;
+
+        while(true)
+        {
+                if(HashIndex == StartHash) break;
+
+                if(Self->Keys[HashIndex * Self->MaxKeyLength] == GSNullChar)
                 {
                         GSStringCopy(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
                         Self->Values[HashIndex] = Value;
@@ -563,6 +632,7 @@ GSHashMapAdd(gs_hash_map *Self, char *Key, void *Value)
                 HashIndex = (HashIndex + 1) % Self->Capacity;
         }
 
+        /* Couldn't find any free space. */
         return(false);
 }
 
@@ -582,41 +652,13 @@ GSHashMapGrow(gs_hash_map **Self, unsigned int NumEntries, void *New)
                 char *Value = (char *)(Old->Values[I]);
                 if(Key != NULL)
                 {
-                        gs_bool Success = GSHashMapAdd(*Self, Key, Value);
+                        gs_bool Success = GSHashMapSet(*Self, Key, Value);
                         if(!Success)
                                 GSAbortWithMessage("This should have worked!\n");
                 }
         }
 
         return(true);
-}
-
-gs_bool /* Wanted must be a NULL terminated string */
-GSHashMapHasKey(gs_hash_map *Self, char *Wanted)
-{
-        unsigned int HashIndex = __GSHashMapComputeHash(Self, Wanted);
-        char *Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
-        if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
-        {
-                return(true);
-        }
-
-        unsigned int StartHash = HashIndex;
-        HashIndex = (HashIndex + 1) % Self->Capacity;
-
-        while(true)
-        {
-                if(HashIndex == StartHash) break;
-
-                Key = &Self->Keys[HashIndex * Self->MaxKeyLength];
-                if(GSStringIsEqual(Wanted, Key, GSStringLength(Key)))
-                {
-                        return(true);
-                }
-                HashIndex = (HashIndex + 1) % Self->Capacity;
-        }
-
-        return(false);
 }
 
 void * /* Wanted must be a NULL terminated string */
@@ -658,7 +700,7 @@ GSHashMapDelete(gs_hash_map *Self, char *Wanted)
         {
                 void *Result = Self->Values[HashIndex];
                 Self->Values[HashIndex] = NULL;
-                Self->Keys[HashIndex * Self->MaxKeyLength] = '\0';
+                Self->Keys[HashIndex * Self->MaxKeyLength] = GSNullChar;
                 Self->Count--;
                 return(Result);
         }
@@ -675,7 +717,7 @@ GSHashMapDelete(gs_hash_map *Self, char *Wanted)
                 {
                         void *Result = Self->Values[HashIndex];
                         Self->Values[HashIndex] = NULL;
-                        Self->Keys[HashIndex * Self->MaxKeyLength] = '\0';
+                        Self->Keys[HashIndex * Self->MaxKeyLength] = GSNullChar;
                         Self->Count--;
                         return(Result);
                 }

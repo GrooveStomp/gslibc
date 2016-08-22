@@ -566,7 +566,7 @@ TestHashMapGrow()
 }
 
 void
-TestHashMapAdd()
+TestHashMapSet()
 {
         int StringLength = 256;
         int NumElements = 3;
@@ -583,14 +583,23 @@ TestHashMapAdd()
         {
                 char *Key = &Keys[KeyIndices[I]];
                 char *Value = &Values[ValueIndices[I]];
-                AddResult = GSHashMapAdd(Map, Key, (void *)Value);
+                AddResult = GSHashMapSet(Map, Key, (void *)Value);
                 GSTestAssert(AddResult == true, "Should be able to add (%s,%s)\n", Key, Value);
         }
 
         char *ExtraKey = "Extra Key";
         char *ExtraValue = "Extra Value";
-        AddResult = GSHashMapAdd(Map, ExtraKey, ExtraValue);
+        AddResult = GSHashMapSet(Map, ExtraKey, ExtraValue);
         GSTestAssert(AddResult == false, "HashMap is full, should not be able to add (%s,%s)\n", ExtraKey, ExtraValue);
+
+        /* Now test updating a value. */
+        char *UpdatedValue = "UpdatedValue";
+        AddResult = GSHashMapSet(Map, "Key1", UpdatedValue);
+        GSTestAssert(AddResult == true, "Updated value for key (%s)\n", "Key1");
+
+        void *GetResult = GSHashMapGet(Map, "Key1");
+        GSTestAssert(GetResult != GSNullPtr, "GetResult should be valid\n");
+        GSTestAssert((char *)GetResult == UpdatedValue, "%p == %p\n", GetResult, (void *)UpdatedValue);
 }
 
 void
@@ -610,7 +619,7 @@ TestHashMapHasKey()
         {
                 char *Key = &Keys[KeyIndices[I]];
                 char *Value = &Values[ValueIndices[I]];
-                GSHashMapAdd(Map, Key, (void *)Value);
+                GSHashMapSet(Map, Key, (void *)Value);
         }
 
         gs_bool HasResult;
@@ -642,7 +651,7 @@ TestHashMapGet()
         {
                 char *Key = &Keys[KeyIndices[I]];
                 char *Value = &Values[ValueIndices[I]];
-                GSHashMapAdd(Map, Key, (void *)Value);
+                GSHashMapSet(Map, Key, (void *)Value);
         }
 
         void *GetResult;
@@ -678,7 +687,7 @@ TestHashMapDelete()
         {
                 char *Key = &Keys[KeyIndices[I]];
                 char *Value = &Values[ValueIndices[I]];
-                GSHashMapAdd(Map, Key, (void *)Value);
+                GSHashMapSet(Map, Key, (void *)Value);
         }
 
         void *DeleteResult;
@@ -965,7 +974,7 @@ main(int ArgCount, char **Args)
         TestHashMapBytesRequired();
         TestHashMapInit();
         TestHashMapGrow();
-        TestHashMapAdd();
+        TestHashMapSet();
         TestHashMapHasKey();
         TestHashMapGet();
         TestHashMapDelete();
