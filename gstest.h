@@ -9,6 +9,7 @@
  * Library containing functions and macros to aid in testing other C code.
  *
  ******************************************************************************/
+#ifndef GS_TEST_VERSION
 #define GS_TEST_VERSION 0.1.0
 
 #include <stdlib.h> /* EXIT_SUCCESS, EXIT_FAILURE */
@@ -36,3 +37,5 @@ GSTestRandomString(char *Memory, unsigned int MinLength, unsigned int MaxLength)
 
         return(Length);
 }
+
+#endif /* GS_TEST_VERSION */

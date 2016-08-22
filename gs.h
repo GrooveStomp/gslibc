@@ -9,6 +9,7 @@
  * Standard library for personal use. Heavily influenced by Sean Barrett's stb.
  *
  ******************************************************************************/
+#ifndef GS_VERSION
 #define GS_VERSION 0.2.0
 
 #include <stdio.h>
@@ -908,3 +909,5 @@ GSFileCopyToBuffer(char *FileName, gs_buffer *Buffer)
 
         return(true);
 }
+
+#endif /* GS_VERSION */
