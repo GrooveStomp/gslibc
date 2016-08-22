@@ -1,7 +1,7 @@
 /******************************************************************************
  * File: gs.h
  * Created: 2016-07-14
- * Last Updated: 2016-08-19
+ * Last Updated: 2016-08-22
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  *-----------------------------------------------------------------------------
@@ -58,6 +58,9 @@
 #define GSBytesToKilobytes(X) (X) * GS1024Inverse
 #define GSBytesToMegabytes(X) GSBytesToKilobytes((X)) * GS1024Inverse
 #define GSBytesToGigabytes(X) GSBytesToMegabytes((X)) * GS1024Inverse
+
+#define GSNullChar '\0'
+#define GSNullPtr NULL
 
 /******************************************************************************
  * Boolean Definitions
@@ -135,6 +138,17 @@ GSCharIsAlphanumeric(char C)
         return(Result);
 }
 
+gs_bool
+GSCharIsUpcase(char C)
+{
+        gs_bool Result =
+                GSCharIsAlphabetical(C) &&
+                (C >= 'A') &&
+                (C <= 'Z');
+
+        return(Result);
+}
+
 char
 GSCharUpcase(char C)
 {
@@ -145,6 +159,17 @@ GSCharUpcase(char C)
                 int Delta = C - 'a';
                 Result = Delta + 'A';
         }
+
+        return(Result);
+}
+
+gs_bool
+GSCharIsDowncase(char C)
+{
+        gs_bool Result =
+                GSCharIsAlphabetical(C) &&
+                (C >= 'a') &&
+                (C <= 'z');
 
         return(Result);
 }
@@ -200,7 +225,7 @@ GSStringLength(char *String)
 }
 
 gs_bool
-GSStringCopyWithNull(char *Source, char *Dest, int Max)
+GSStringCopy(char *Source, char *Dest, int Max)
 {
         if(Source == NULL || Dest == NULL)
         {
@@ -218,7 +243,7 @@ GSStringCopyWithNull(char *Source, char *Dest, int Max)
 }
 
 gs_bool
-GSStringCopy(char *Source, char *Dest, int Max)
+GSStringCopyNoNull(char *Source, char *Dest, int Max)
 {
         if(Source == NULL || Dest == NULL)
         {
@@ -233,9 +258,13 @@ GSStringCopy(char *Source, char *Dest, int Max)
         return(true);
 }
 
+/* NOTE: Assumes a maximum string length of 512 bytes. */
 unsigned int /* Returns number of bytes copied. */
-GSStringCopyWithoutSurroundingWhitespace(char *Source, char *Dest, unsigned int MaxLength)
+GSStringTrimWhitespace(char *Source, unsigned int MaxLength)
 {
+        char Dest[512];
+        MaxLength = GSMin(512, MaxLength);
+
         int FirstChar, LastChar;
         for(FirstChar = 0; GSCharIsWhitespace(Source[FirstChar]); FirstChar++);
 
@@ -248,69 +277,173 @@ GSStringCopyWithoutSurroundingWhitespace(char *Source, char *Dest, unsigned int 
                 Dest[Count] = Source[S];
         }
 
-        return(Count);
-}
-
-unsigned int /* Returns number of bytes copied. */
-GSStringCopyWithoutSurroundingWhitespaceWithNull(char *Source, char *Dest, unsigned int MaxLength)
-{
-        int FirstChar, LastChar;
-        for(FirstChar = 0; GSCharIsWhitespace(Source[FirstChar]); FirstChar++);
-
-        int StringLength = GSStringLength(Source);
-        for(LastChar = StringLength - 1; GSCharIsWhitespace(Source[LastChar]); LastChar--);
-
-        int Count = 0;
-        for(int S=FirstChar; S<=LastChar && Count < MaxLength; Count++, S++)
+        for(int I=0; I<Count; I++)
         {
-                Dest[Count] = Source[S];
+                Source[I] = Dest[I];
         }
-        Dest[Count] = '\0';
+        Source[Count] = GSNullChar;
 
         return(Count);
 }
 
 /*
-  eg.: hellOTherE -> Hellothere, my_friend -> MyFriend. Strips out
-  non-alphanumeric chars.
+  For any ascii character following an underscore, remove the underscore
+  and capitalize the ascii char.
+  This function assumes a maximum string size of 512 bytes.
+  The first character is capitalized.
 */
-void
-GSStringCapitalize(char *Source, char *Dest, unsigned int SourceLength)
+unsigned int
+GSStringSnakeCaseToCamelCase(char *Source, unsigned int SourceLength)
 {
+        char Dest[512]; /* Scratch buffer. */
+        int Si = 0, Di = 0; /* Iterable indices for Source and Dest. */
+
+        if((Source[Si] == '_') &&
+           (Si+1 < SourceLength) &&
+           GSCharIsAlphabetical(Source[Si+1]))
+        {
+                Si++;
+        }
+        Dest[Di] = GSCharUpcase(Source[Si]);
+        Si++;
+        Di++;
+
+        SourceLength = GSMin(512, SourceLength);
+
+        for(Si, Di; Si<SourceLength; Si++, Di++)
+        {
+                /* Replace any '_*' with 'upcase(*)' where * is an ascii char. */
+                if((Source[Si] == '_') &&
+                   (Si+1 < SourceLength) &&
+                   GSCharIsAlphabetical(Source[Si+1]))
+                {
+                        Dest[Di] = GSCharUpcase(Source[Si+1]);
+                        Si++;
+                }
+                /* Copy chars normally. */
+                else
+                {
+                        Dest[Di] = Source[Si];
+                }
+        }
+
+        /* Write the modified string back to source. */
+        for(int I=0; I<Di; I++)
+        {
+                Source[I] = Dest[I];
+        }
+        Source[Di] = GSNullChar;
+
+        return(Di);
+}
+
+/*
+  Prerequisites:
+  - Dest must be large enough to contain the modified string.
+
+  For any Capitalized ascii character, replace with an underscore followed by
+  the lowercase version of that character. This does not apply to leading char.
+  eg.: CamelCase -> Camel_case
+*/
+unsigned int
+GSStringCamelCaseToSnakeCase(char *Source, char *Dest, unsigned int SourceLength)
+{
+        int Si = 0, Di = 0; /* Iterable indices for Source and Dest. */
+        Dest[Si] = GSCharDowncase(Source[Si]);
+        Si++;
+        Di++;
+
+        for(Si, Di; Si<SourceLength && Source[Si] != GSNullChar; Si++, Di++)
+        {
+                /* Replace upcase ascii char with '_' and downcase ascii char. */
+                if(GSCharIsUpcase(Source[Si]))
+                {
+                        Dest[Di] = '_';
+                        Di++;
+                        Dest[Di] = GSCharDowncase(Source[Si]);
+                }
+                /* Copy chars normally. */
+                else
+                {
+                        Dest[Di] = Source[Si];
+                }
+        }
+        Dest[Di] = GSNullChar;
+
+        return(Di);
+}
+
+/*
+  Capitalizes the first character found.
+  Modifies Source in-place.
+  Returns Source.
+  eg.: hello -> Hello
+       123foos -> 123Foos
+*/
+char *
+GSStringCapitalize(char *Source, unsigned int Length)
+{
+        int Index = 0;
+
         while(true)
         {
-                if(GSCharIsAlphanumeric(*Source))
+                if(Index >= Length)
                         break;
-
-                Source++;
-                SourceLength--;
+                if(Source[Index] == GSNullChar)
+                        break;
+                if(GSCharIsAlphabetical(Source[Index]))
+                        break;
+                Index++;
         }
 
-        *Dest = GSCharUpcase(*Source);
-        Dest++;
+        if(Index >= Length)
+                return(Source);
 
-        gs_bool UpcaseNextChar = false;
-        for(int I=1; I<SourceLength; I++)
-        {
-                if('_' == Source[I])
+        Source[Index] = GSCharUpcase(Source[Index]);
+
+        return(Source);
+}
+
+typedef gs_bool (*GSStringFilterFn)(char C);
+
+int /* Returns length of new string */
+GSStringKeep(char *Source, char *Dest, unsigned int MaxLength, GSStringFilterFn FilterFn)
+{
+        int SourceIndex = 0;
+        int DestIndex = 0;
+
+	while(SourceIndex < MaxLength)
+	{
+                if(FilterFn(Source[SourceIndex]))
                 {
-                        UpcaseNextChar = true;
+                        Dest[DestIndex] = Source[SourceIndex];
+                        DestIndex++;
                 }
-                else if(GSCharIsAlphanumeric(Source[I]))
-                {
-                        if(UpcaseNextChar)
-                        {
-                                UpcaseNextChar = false;
-                                *Dest = GSCharUpcase(Source[I]);
-                                Dest++;
-                        }
-                        else
-                        {
-                                *Dest = GSCharDowncase(Source[I]);
-                                Dest++;
-                        }
-                }
+                SourceIndex++;
         }
+        Dest[DestIndex] = GSNullChar;
+
+        return(DestIndex + 1);
+}
+
+int /* Returns length of new string */
+GSStringReject(char *Source, char *Dest, unsigned int MaxLength, GSStringFilterFn FilterFn)
+{
+        int SourceIndex = 0;
+        int DestIndex = 0;
+
+	while(SourceIndex < MaxLength)
+	{
+                if(!FilterFn(Source[SourceIndex]))
+                {
+                        Dest[DestIndex] = Source[SourceIndex];
+                        DestIndex++;
+                }
+                SourceIndex++;
+        }
+        Dest[DestIndex] = GSNullChar;
+
+        return(DestIndex + 1);
 }
 
 /******************************************************************************
@@ -407,7 +540,7 @@ GSHashMapAdd(gs_hash_map *Self, char *Key, void *Value)
         unsigned int HashIndex = __GSHashMapComputeHash(Self, Key);
         if(Self->Keys[HashIndex * Self->MaxKeyLength] == '\0')
         {
-                GSStringCopyWithNull(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
+                GSStringCopy(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
                 Self->Values[HashIndex] = Value;
                 Self->Count++;
                 return(true);
@@ -422,7 +555,7 @@ GSHashMapAdd(gs_hash_map *Self, char *Key, void *Value)
 
                 if(Self->Keys[HashIndex * Self->MaxKeyLength] == '\0')
                 {
-                        GSStringCopyWithNull(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
+                        GSStringCopy(Key, &Self->Keys[HashIndex * Self->MaxKeyLength], KeyLength);
                         Self->Values[HashIndex] = Value;
                         Self->Count++;
                         return(true);

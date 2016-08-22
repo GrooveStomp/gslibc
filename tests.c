@@ -1,7 +1,7 @@
 /******************************************************************************
  * File: tests.c
  * Created: 2016-07-14
- * Last Updated: 2016-08-19
+ * Last Updated: 2016-08-22
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  ******************************************************************************/
@@ -12,9 +12,12 @@
 #include <alloca.h>
 #include <stdarg.h>
 
+
 /******************************************************************************
- gstest
-*******************************************************************************/
+ * gstest.h
+ ******************************************************************************/
+
+
 void
 TestAssert()
 {
@@ -40,9 +43,27 @@ TestRandomString()
         }
 }
 
+
+/******************************************************************************
+ * gs.h
+ ******************************************************************************/
+
+
 /******************************************************************************
  * Miscellaneous Macros
  *****************************************************************************/
+void
+TestNullChar()
+{
+        GSTestAssert(GSNullChar == '\0', "%c == %c\n", GSNullChar, '\0');
+}
+
+void
+TestNullPtr()
+{
+        GSTestAssert(GSNullPtr == NULL, "%p == %p\n", (void *)GSNullPtr, (void *)NULL);
+}
+
 void
 TestAbortWithMessage()
 {
@@ -272,10 +293,26 @@ TestCharIsAlphanumeric()
 }
 
 void
+TestCharIsUpcase()
+{
+        char *Chars = "aA_1wW";
+        GSTestAssert(GSCharIsUpcase(*Chars) == false, "%c is not upcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsUpcase(*Chars) == true, "%c is upcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsUpcase(*Chars) == false, "%c is not upcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsUpcase(*Chars) == false, "%c is not upcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsUpcase(*Chars) == false, "%c is not upcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsUpcase(*Chars) == true, "%c is upcase\n", *Chars);
+}
+
+void
 TestCharUpcase()
 {
         char *Chars = "aA_1wW";
-
         GSTestAssert(GSCharUpcase(*Chars) == 'A', "'a' is Upcased to 'A'");
         Chars++;
         GSTestAssert(GSCharUpcase(*Chars) == 'A', "'A' is not changed");
@@ -290,10 +327,26 @@ TestCharUpcase()
 }
 
 void
+TestCharIsDowncase()
+{
+        char *Chars = "aA_1wW";
+        GSTestAssert(GSCharIsDowncase(*Chars) == true, "%c is downcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsDowncase(*Chars) == false, "%c is not downcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsDowncase(*Chars) == false, "%c is not downcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsDowncase(*Chars) == false, "%c is not downcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsDowncase(*Chars) == true, "%c is downcase\n", *Chars);
+        Chars++;
+        GSTestAssert(GSCharIsDowncase(*Chars) == false, "%c is not downcase\n", *Chars);
+}
+
+void
 TestCharDowncase()
 {
         char *Chars = "aA_1wW";
-
         GSTestAssert(GSCharDowncase(*Chars) == 'a', "'a' is not changed");
         Chars++;
         GSTestAssert(GSCharDowncase(*Chars) == 'a', "'A' is Downcased to 'a'");
@@ -327,72 +380,130 @@ TestStringLength()
 }
 
 void
-TestStringCopyWithNull()
+TestStringCopy()
 {
-        char Buffer[256];
-        memset(Buffer, 1, 256);
-
-        GSStringCopyWithNull("hello", Buffer, 5);
-        GSTestAssert(GSStringIsEqual("hello", Buffer, GSStringLength(Buffer)), "hello == %s", Buffer);
+        char String[512] = { "Hello" };
+        GSStringCopy("Bye", String, 3);
+        GSTestAssert(GSStringIsEqual("Bye", String, GSStringLength(String)), "Bye == %s", String);
+        GSTestAssert(String[3] == GSNullChar, "%c == %c\n", GSNullChar, String[3]);
 }
 
 void
-TestStringCopyWithoutSurroundingWhitespace()
+TestStringCopyNoNull()
 {
-        char Buffer[256];
-        char *Source = "   Hello there    ";
-        int StringLength = GSStringLength(Source);
-
-        memset(Buffer, 0, 256);
-        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, 4);
-        GSTestAssert(GSStringIsEqual("Hell", Buffer, 4), "Hell == %s", Buffer);
-
-        memset(Buffer, 0, 256);
-        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, StringLength);
-        GSTestAssert(GSStringIsEqual("Hello there", Buffer, GSStringLength("Hello there")), "Hello there == %s", Buffer);
+        char String[512] = { "Hello" };
+        GSStringCopy("Bye", String, 3);
+        GSTestAssert(GSStringIsEqual("Byelo", String, GSStringLength(String)), "Byelo == %s", String);
+        GSTestAssert(String[5] == GSNullChar, "%c == %c\n", GSNullChar, String[5]);
 }
 
 void
-TestStringCopyWithoutSurroundingWhitespaceWithNull()
+TestStringTrimWhitespace()
 {
-        char Buffer[256];
-        char *Source = "   Hello there    ";
-        int StringLength = GSStringLength(Source);
+        char String1[512] = { "    Middle   " };
+        GSStringTrimWhitespace(String1, 13);
+        GSTestAssert(GSStringIsEqual("Middle", String1, 6), "Middle == %s", String1);
 
-        memset(Buffer, 1, 256); /* Set buffer to 1 so it's not NULL-terminated by default. */
-        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, 4);
-        GSTestAssert(GSStringIsEqual("Hell", Buffer, 4), "Hell == %s", Buffer);
+        char String2[512] = { "   After" };
+        GSStringTrimWhitespace(String2, 8);
+        GSTestAssert(GSStringIsEqual("After", String2, 5), "After == %s", String2);
 
-        memset(Buffer, 1, 256); /* Set buffer to 1 so it's not NULL-terminated by default. */
-        GSStringCopyWithoutSurroundingWhitespace(Source, Buffer, StringLength);
-        GSTestAssert(GSStringIsEqual("Hello there", Buffer, GSStringLength("Hello there")), "Hello there == %s", Buffer);
+        char String3[512] = { "Before    " };
+        GSStringTrimWhitespace(String3, 11);
+        GSTestAssert(GSStringIsEqual("Before", String3, 6), "Before == %s", String3);
 }
 
 void
 TestStringCapitalize()
 {
-        char *String;
         char Result[256];
 
-        String = "_hello_there_";
-        memset(Result, 0, 256);
-        GSStringCapitalize(String, Result, GSStringLength(String));
-        GSTestAssert(GSStringIsEqual("HelloThere", Result, GSStringLength(Result)), "HelloThere == %s", Result);
+        char String1[512] = { "_hello_there_" };
+        GSStringCapitalize(String1, GSStringLength(String1));
+        GSTestAssert(GSStringIsEqual("_Hello_there_", String1, GSStringLength(String1)), "_Hello_there_ == %s\n", String1);
 
-        String = "alllowercase";
-        memset(Result, 0, 256);
-        GSStringCapitalize(String, Result, GSStringLength(String));
-        GSTestAssert(GSStringIsEqual("Alllowercase", Result, GSStringLength(Result)), "Alllowercase == %s", Result);
+        char String2[512] = { "alllowercase" };
+        GSStringCapitalize(String2, GSStringLength(String2));
+        GSTestAssert(GSStringIsEqual("Alllowercase", String2, GSStringLength(String2)), "Alllowercase == %s\n", String2);
 
-        String = "_123abc\\\"'abc123";
-        memset(Result, 0, 256);
-        GSStringCapitalize(String, Result, GSStringLength(String));
-        GSTestAssert(GSStringIsEqual("123abcabc123", Result, GSStringLength(Result)), "123abcabc123 == %s", Result);
+        char String3[512] = { "_123abc\\\"'abc123" };
+        GSStringCapitalize(String3, GSStringLength(String3));
+        GSTestAssert(GSStringIsEqual("_123Abc\\\"'abc123", String3, GSStringLength(String3)), "_123Abc\\\"'abc123 == %s\n", String3);
 
-        String = "CapitalizedExample";
-        memset(Result, 0, 256);
-        GSStringCapitalize(String, Result, GSStringLength(String));
-        GSTestAssert(GSStringIsEqual("Capitalizedexample", Result, GSStringLength(Result)), "Capitalizedexample == %s", Result);
+        char String4[512] = { "CapitalizedExample" };
+        GSStringCapitalize(String4, GSStringLength(String4));
+        GSTestAssert(GSStringIsEqual("CapitalizedExample", String4, GSStringLength(String4)), "CapitalizedExample == %s\n", String4);
+}
+
+void
+TestStringSnakeCaseToCamelCase()
+{
+        int NewSize;
+
+        char String1[512] = { "snake_case" };
+        NewSize = GSStringSnakeCaseToCamelCase(String1, GSStringLength(String1));
+        GSTestAssert(NewSize == GSStringLength(String1), "%i == %lu\n", NewSize, GSStringLength(String1));
+        GSTestAssert(GSStringIsEqual("SnakeCase", String1, GSStringLength(String1)),
+                     "%s == %s\n", "SnakeCase", String1);
+
+        char String2[512] = { "snakecase" };
+        NewSize = GSStringSnakeCaseToCamelCase(String2, GSStringLength(String2));
+        GSTestAssert(NewSize == GSStringLength(String2), "%i == %lu\n", NewSize, GSStringLength(String2));
+        GSTestAssert(GSStringIsEqual("Snakecase", String2, GSStringLength(String2)),
+                     "%s == %s\n", "Snakecase", String2);
+
+        char String3[512] = { "_Snake_Case_" };
+        NewSize = GSStringSnakeCaseToCamelCase(String3, GSStringLength(String3));
+        GSTestAssert(NewSize == GSStringLength(String3), "%i == %lu\n", NewSize, GSStringLength(String3));
+        GSTestAssert(GSStringIsEqual("SnakeCase_", String3, GSStringLength(String3)),
+                     "%s == %s\n", "SnakeCase_", String3);
+}
+
+void
+TestStringCamelCaseToSnakeCase()
+{
+        int NewSize;
+
+        char String1a[512] = { "CamelCase" };
+        char String1b[512];
+        NewSize = GSStringCamelCaseToSnakeCase(String1a, String1b, GSStringLength(String1a));
+        GSTestAssert(NewSize == GSStringLength(String1b), "%i == %lu\n", NewSize, GSStringLength(String1b));
+        GSTestAssert(GSStringIsEqual("camel_case", String1b, GSStringLength(String1b)),
+                     "%s == %s\n", "camel_case", String1b);
+
+        char String2a[512] = { "camel_CaSe" };
+        char String2b[512];
+        NewSize = GSStringCamelCaseToSnakeCase(String2a, String2b, GSStringLength(String2a));
+        GSTestAssert(NewSize == GSStringLength(String2b), "%i == %lu\n", NewSize, GSStringLength(String2b));
+        GSTestAssert(GSStringIsEqual("camel__ca_se", String2b, GSStringLength(String2b)),
+                     "%s == %s\n", "camel__ca_se", String2b);
+
+        char String3a[512] = { "snake_case" };
+        char String3b[512];
+        NewSize = GSStringCamelCaseToSnakeCase(String3a, String3b, GSStringLength(String3a));
+        GSTestAssert(NewSize == GSStringLength(String3b), "%i == %lu\n", NewSize, GSStringLength(String3b));
+        GSTestAssert(GSStringIsEqual("snake_case", String3b, GSStringLength(String3b)),
+                     "%s == %s\n", "snake_case", String3b);
+}
+
+void
+TestStringKeep()
+{
+        char String1[512] = { "thisISisAaHIDDENhiddenMESSAGEmessage" };
+        char String2[512];
+        GSStringKeep(String1, String2, GSStringLength(String1), GSCharIsDowncase);
+        GSTestAssert(GSStringIsEqual("thisisahiddenmessage", String2, GSStringLength(String2)),
+                     "%s == %s\n", "thisisahiddenmessage", String2);
+}
+
+void
+TestStringReject()
+{
+        char String1[512] = { "thisISisAaHIDDENhiddenMESSAGEmessage" };
+        char String2[512];
+        GSStringReject(String1, String2, GSStringLength(String1), GSCharIsUpcase);
+        GSTestAssert(GSStringIsEqual("thisisahiddenmessage", String2, GSStringLength(String2)),
+                     "%s == %s\n", "thisisahiddenmessage", String2);
 }
 
 /******************************************************************************
@@ -813,6 +924,8 @@ main(int ArgCount, char **Args)
           gslibc
          **********************************************************************/
         /* Miscellaneous Macros */
+        TestNullChar();
+        TestNullPtr();
         TestAbortWithMessage();
         TestArraySize();
         TestArrayForEach();
@@ -833,15 +946,21 @@ main(int ArgCount, char **Args)
         TestCharIsHexadecimal();
         TestCharIsAlphabetical();
         TestCharIsAlphanumeric();
+        TestCharIsUpcase();
         TestCharUpcase();
+        TestCharIsDowncase();
         TestCharDowncase();
         /* String */
         TestStringIsEqual();
         TestStringLength();
-        TestStringCopyWithNull();
-        TestStringCopyWithoutSurroundingWhitespace();
-        TestStringCopyWithoutSurroundingWhitespaceWithNull();
+        TestStringCopy();
+        TestStringCopyNoNull();
+        TestStringTrimWhitespace();
         TestStringCapitalize();
+        TestStringSnakeCaseToCamelCase();
+        TestStringCamelCaseToSnakeCase();
+        TestStringKeep();
+        TestStringReject();
         /* Hash Map */
         TestHashMapBytesRequired();
         TestHashMapInit();
