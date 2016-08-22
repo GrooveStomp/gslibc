@@ -9,12 +9,13 @@
  * Standard library for personal use. Heavily influenced by Sean Barrett's stb.
  *
  ******************************************************************************/
-#define GS_VERSION 0.1.0
+#define GS_VERSION 0.2.0
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> /* memset */
 #include <stdarg.h> /* va_list */
+#include <libgen.h> /* basename */
 
 #define GSArraySize(Array) (sizeof((Array)) / sizeof((Array)[0]))
 
@@ -738,20 +739,22 @@ typedef struct gs_args
 } gs_args;
 
 void
-GSArgInit(gs_args *Self, int ArgCount, char **Args)
+GSArgsInit(gs_args *Self, int ArgCount, char **Args)
 {
         Self->Count = ArgCount;
         Self->Args = Args;
 }
 
 char *
-GSArgProgramName(gs_args *Self)
+GSArgsProgramName(gs_args *Self)
 {
-        return(Self->Args[0]);
+        char *ProgramName = Self->Args[0];
+        char *Result = basename(ProgramName);
+        return(Result);
 }
 
 gs_bool
-GSArgIsPresent(gs_args *Args, char *Wanted)
+GSArgsIsPresent(gs_args *Args, char *Wanted)
 {
         int StringLength = GSStringLength(Wanted);
         for(int I=0; I<Args->Count; I++)
@@ -765,7 +768,7 @@ GSArgIsPresent(gs_args *Args, char *Wanted)
 }
 
 int /* Returns -1 if Arg not found. */
-GSArgIndex(gs_args *Args, char *Wanted)
+GSArgsFind(gs_args *Args, char *Wanted)
 {
         int StringLength = GSStringLength(Wanted);
         for(int I=0; I<Args->Count; I++)
@@ -779,7 +782,7 @@ GSArgIndex(gs_args *Args, char *Wanted)
 }
 
 char * /* Returns NULL if Index is invalid. */
-GSArgAtIndex(gs_args *Args, int Index)
+GSArgsAtIndex(gs_args *Args, int Index)
 {
         if((Index < 0) ||
            (Index > (Args->Count - 1)))
@@ -789,20 +792,20 @@ GSArgAtIndex(gs_args *Args, int Index)
 }
 
 char * /* Returns NULL if Marker is not found or no trailing arg. */
-GSArgAfter(gs_args *Args, char *Marker)
+GSArgsAfter(gs_args *Args, char *Marker)
 {
-        int Index = GSArgIndex(Args, Marker);
+        int Index = GSArgsFind(Args, Marker);
         if(Index < 0) return(NULL);
 
-        char *Arg = GSArgAtIndex(Args, Index + 1);
+        char *Arg = GSArgsAtIndex(Args, Index + 1);
         return(Arg);
 }
 
 gs_bool
-GSArgHelpWanted(gs_args *Args)
+GSArgsHelpWanted(gs_args *Args)
 {
-        if(GSArgIsPresent(Args, "-h") ||
-           GSArgIsPresent(Args, "--help"))
+        if(GSArgsIsPresent(Args, "-h") ||
+           GSArgsIsPresent(Args, "--help"))
                 return(true);
         else
                 return(false);

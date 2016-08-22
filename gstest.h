@@ -1,3 +1,16 @@
+/******************************************************************************
+ * File: gstest.h
+ * Created: 2016-08-19
+ * Last Updated: 2016-08-22
+ * Creator: Aaron Oman (a.k.a GrooveStomp)
+ * Notice: (C) Copyright 2016 by Aaron Oman
+ *-----------------------------------------------------------------------------
+ *
+ * Library containing functions and macros to aid in testing other C code.
+ *
+ ******************************************************************************/
+#define GS_TEST_VERSION 0.1.0
+
 #include <stdlib.h> /* EXIT_SUCCESS, EXIT_FAILURE */
 
 #define GSTestAssert(Expression, ...) \

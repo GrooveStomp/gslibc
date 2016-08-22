@@ -712,7 +712,7 @@ TestHashMapDelete()
  ******************************************************************************/
 
 void
-TestArgIsPresent()
+TestArgsIsPresent()
 {
         const int Count = 2;
         char *Params[Count];
@@ -720,19 +720,19 @@ TestArgIsPresent()
         Params[1] = "arg2";
 
         gs_args Args;
-        GSArgInit(&Args, Count, Params);
+        GSArgsInit(&Args, Count, Params);
 
         char *Wanted = "arg1";
-        gs_bool Result = GSArgIsPresent(&Args, Wanted);
+        gs_bool Result = GSArgsIsPresent(&Args, Wanted);
         GSTestAssert(Result == true, "Arg(%s) is found", Wanted);
 
         Wanted = "arg3";
-        Result = GSArgIsPresent(&Args, Wanted);
+        Result = GSArgsIsPresent(&Args, Wanted);
         GSTestAssert(Result == false, "Arg(%s) is not found", Wanted);
 }
 
 void
-TestArgIndex()
+TestArgsFind()
 {
         const int Count = 2;
         char *Params[Count];
@@ -740,19 +740,19 @@ TestArgIndex()
         Params[1] = "arg2";
 
         gs_args Args;
-        GSArgInit(&Args, Count, Params);
+        GSArgsInit(&Args, Count, Params);
 
         char *Arg = "arg1";
-        int Index = GSArgIndex(&Args, Arg);
+        int Index = GSArgsFind(&Args, Arg);
         GSTestAssert(Index == 0, "Arg(%s) is at index(%i)", Arg, Index);
 
         Arg = "arg3";
-        Index = GSArgIndex(&Args, Arg);
+        Index = GSArgsFind(&Args, Arg);
         GSTestAssert(Index == -1, "Arg(%s) is not found", Arg);
 }
 
 void
-TestArgAtIndex()
+TestArgsAtIndex()
 {
         const int Count = 2;
         char *Params[Count];
@@ -760,23 +760,23 @@ TestArgAtIndex()
         Params[1] = "arg2";
 
         gs_args Args;
-        GSArgInit(&Args, Count, Params);
+        GSArgsInit(&Args, Count, Params);
 
         int Index = 0;
-        char *Arg = GSArgAtIndex(&Args, Index);
+        char *Arg = GSArgsAtIndex(&Args, Index);
         GSTestAssert(GSStringIsEqual(Arg, "arg1", 4), "Arg(%s) is at index(%i)", Arg, Index);
 
         Index = -1;
-        Arg = GSArgAtIndex(&Args, Index);
+        Arg = GSArgsAtIndex(&Args, Index);
         GSTestAssert(Arg == NULL, "Arg(%s) is not found", Arg);
 
         Index = 2;
-        Arg = GSArgAtIndex(&Args, Index);
+        Arg = GSArgsAtIndex(&Args, Index);
         GSTestAssert(Arg == NULL, "Arg(%s) is not found", Arg);
 }
 
 void
-TestArgAfter()
+TestArgsAfter()
 {
         const int Count = 2;
         char *Params[Count];
@@ -784,23 +784,23 @@ TestArgAfter()
         Params[1] = "arg2";
 
         gs_args Args;
-        GSArgInit(&Args, Count, Params);
+        GSArgsInit(&Args, Count, Params);
 
         char *Arg = "arg1";
-        char *After = GSArgAfter(&Args, Arg);
+        char *After = GSArgsAfter(&Args, Arg);
         GSTestAssert(GSStringIsEqual(After, "arg2", 4), "Arg(%s) follows Arg(%s)", After, Arg);
 
         Arg = "arg2";
-        After = GSArgAfter(&Args, Arg);
+        After = GSArgsAfter(&Args, Arg);
         GSTestAssert(After == NULL, "No argument follows Arg(%s)", Arg);
 
         Arg = "What?";
-        After = GSArgAfter(&Args, Arg);
+        After = GSArgsAfter(&Args, Arg);
         GSTestAssert(After == NULL, "No argument follows Arg(%s)", Arg);
 }
 
 void
-TestArgHelpWanted()
+TestArgsHelpWanted()
 {
         const int Count = 2;
         char *Params[Count];
@@ -808,17 +808,17 @@ TestArgHelpWanted()
         Params[1] = "arg2";
 
         gs_args Args;
-        GSArgInit(&Args, Count, Params);
+        GSArgsInit(&Args, Count, Params);
 
-        gs_bool Result = GSArgHelpWanted(&Args);
+        gs_bool Result = GSArgsHelpWanted(&Args);
         GSTestAssert(Result == true, "-h or --help is present");
 
         Params[0] = "--help";
-        Result = GSArgHelpWanted(&Args);
+        Result = GSArgsHelpWanted(&Args);
         GSTestAssert(Result == true, "-h or --help is present");
 
         Params[0] = "arg1";
-        Result = GSArgHelpWanted(&Args);
+        Result = GSArgsHelpWanted(&Args);
         GSTestAssert(Result == false, "-h or --help is not present");
 }
 
@@ -979,11 +979,11 @@ main(int ArgCount, char **Args)
         TestHashMapGet();
         TestHashMapDelete();
         /* Arg Parsing */
-        TestArgIsPresent();
-        TestArgIndex();
-        TestArgAtIndex();
-        TestArgAfter();
-        TestArgHelpWanted();
+        TestArgsIsPresent();
+        TestArgsFind();
+        TestArgsAtIndex();
+        TestArgsAfter();
+        TestArgsHelpWanted();
         /* Byte Streams and Buffers */
         TestBufferInit();
         TestBufferIsEOF();
