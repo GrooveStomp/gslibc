@@ -1,16 +1,17 @@
 /******************************************************************************
  * File: gs.h
  * Created: 2016-07-14
- * Last Updated: 2016-08-22
+ * Last Updated: 2016-08-23
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  *-----------------------------------------------------------------------------
  *
- * Standard library for personal use. Heavily influenced by Sean Barrett's stb.
+ * Standard library for personal use. Heavily influenced by Sean Barrett's stb
+ * and Casey Muratori's Handmade Hero.
  *
  ******************************************************************************/
 #ifndef GS_VERSION
-#define GS_VERSION 0.2.0
+#define GS_VERSION 0.3.0
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -463,7 +464,7 @@ GSStringReject(char *Source, char *Dest, unsigned int MaxLength, GSStringFilterF
  *     char *Value = "value";
  *     int StringLength = 256;
  *     int NumElements = 13;
- *     size_t BytesRequired = GSHashMapBytesRequired(StringLength, NumElements);
+ *     size_t BytesRequired = GSHashMapAllocSize(StringLength, NumElements);
  *     gs_hash_map *Map = GSHashMapInit(alloca(BytesRequired), StringLength, NumElements);
  *     GSHashMapSet(Map, "key", Value);
  *     if(GSHashMapHasKey(Map, "key"))
@@ -502,7 +503,7 @@ __GSHashMapComputeHash(gs_hash_map *Self, char *String)
 }
 
 size_t
-GSHashMapBytesRequired(unsigned int MaxKeyLength, unsigned int NumEntries)
+GSHashMapAllocSize(unsigned int MaxKeyLength, unsigned int NumEntries)
 {
         int AllocSize =
                 sizeof(gs_hash_map) +
@@ -519,7 +520,7 @@ GSHashMapInit(void *Memory, unsigned int MaxKeyLength, unsigned int NumEntries)
 
         Self->MaxKeyLength = MaxKeyLength;
         Self->Capacity = NumEntries;
-        Self->AllocatedBytes = GSHashMapBytesRequired(MaxKeyLength, NumEntries);
+        Self->AllocatedBytes = GSHashMapAllocSize(MaxKeyLength, NumEntries);
         Self->Count = 0;
 
         int KeysMemLength = MaxKeyLength * NumEntries;
@@ -739,11 +740,20 @@ typedef struct gs_args
         char **Args;
 } gs_args;
 
-void
-GSArgsInit(gs_args *Self, int ArgCount, char **Args)
+unsigned int
+GSArgsAllocSize(void)
 {
+        unsigned int Result = sizeof(gs_args);
+        return(Result);
+}
+
+gs_args *
+GSArgsInit(void *Memory, int ArgCount, char **Args)
+{
+        gs_args *Self = (gs_args *)Memory;
         Self->Count = ArgCount;
         Self->Args = Args;
+        return(Self);
 }
 
 char *

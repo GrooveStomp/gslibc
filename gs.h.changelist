@@ -1,0 +1,13 @@
+gs.h Changelist
+
+0.3.0
+--------------------------------------------------------------------------------
+- Renamed GSHashMapBytesRequired to GSHashMapAllocSize
+- Changed GSArgsInit from:
+    void GSArgsInit(gs_args *, int, char **)
+  to:
+    gs_args *GSArgsInit(void *, int, char **)
+- Added GSArgsAllocSize()
+- Changed env/shell and test layouts
+- Updated README
+- Added this changelist file

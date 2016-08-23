@@ -1,7 +1,7 @@
 /******************************************************************************
  * File: tests.c
  * Created: 2016-07-14
- * Last Updated: 2016-08-22
+ * Last Updated: 2016-08-23
  * Creator: Aaron Oman (a.k.a GrooveStomp)
  * Notice: (C) Copyright 2016 by Aaron Oman
  ******************************************************************************/
@@ -12,67 +12,30 @@
 #include <alloca.h>
 #include <stdarg.h>
 
-
-/******************************************************************************
- * gstest.h
- ******************************************************************************/
-
-
-void
-TestAssert()
-{
-        /* NOTE: Commented out because this exits on failure! */
-        /* GSTestAssert(1 == 2, "Expect %i to equal %i\n", 1, 2); */
-}
-
-void
-TestRandomString()
-{
-        char String[256];
-
-        memset(String, 0, 256);
-        for(int I=0; I<25; I++)
-        {
-                int Length = GSTestRandomString(String, 5, 15);
-                GSTestAssert(Length >= 5, "%i >= 5\n", Length);
-                GSTestAssert(Length <= 15, "%i <= 15\n", Length);
-                for(int K=0; K<Length; K++)
-                {
-                        GSTestAssert(GSCharIsAlphabetical(String[K]), "%c is a char\n", String[K]);
-                }
-        }
-}
-
-
-/******************************************************************************
- * gs.h
- ******************************************************************************/
-
-
 /******************************************************************************
  * Miscellaneous Macros
  *****************************************************************************/
 void
-TestNullChar()
+TestNullChar(void)
 {
         GSTestAssert(GSNullChar == '\0', "%c == %c\n", GSNullChar, '\0');
 }
 
 void
-TestNullPtr()
+TestNullPtr(void)
 {
         GSTestAssert(GSNullPtr == NULL, "%p == %p\n", (void *)GSNullPtr, (void *)NULL);
 }
 
 void
-TestAbortWithMessage()
+TestAbortWithMessage(void)
 {
         /* NOTE: Commented out because this exits on failure! */
         /* GSAbortWithMessage("%s expected to equal %s\n", "Hello", "Not Hello"); */
 }
 
 void
-TestArraySize()
+TestArraySize(void)
 {
         int Numbers[] = { 1, 2, 3, 4, 5 };
         int Size = GSArraySize(Numbers);
@@ -80,7 +43,7 @@ TestArraySize()
 }
 
 void
-TestArrayForEach()
+TestArrayForEach(void)
 {
         int Numbers[] = { 1, 2, 3, 4, 5 };
         int AssertionIndex = 0;
@@ -93,7 +56,7 @@ TestArrayForEach()
 }
 
 void
-TestMax()
+TestMax(void)
 {
         int Result;
 
@@ -104,7 +67,7 @@ TestMax()
 }
 
 void
-TestMin()
+TestMin(void)
 {
         int Result;
 
@@ -115,21 +78,21 @@ TestMin()
 }
 
 void
-TestBytesToKilobytes()
+TestBytesToKilobytes(void)
 {
         int Num = 1024;
         GSTestAssert(GSBytesToKilobytes(Num) == 1, "%i B == 1 KB", Num);
 }
 
 void
-TestBytesToMegabytes()
+TestBytesToMegabytes(void)
 {
         int Num = 1024*1024;
         GSTestAssert(GSBytesToMegabytes(Num) == 1, "%i B == 1 MB", Num);
 }
 
 void
-TestBytesToGigabytes()
+TestBytesToGigabytes(void)
 {
         int Num = 1024*1024*1024;
         GSTestAssert(GSBytesToGigabytes(Num) == 1, "%i B == 1 GB", Num);
@@ -140,7 +103,7 @@ TestBytesToGigabytes()
  ******************************************************************************/
 
 void
-TestFalse()
+TestFalse(void)
 {
         GSTestAssert(false != true, "False is not True");
         GSTestAssert(false == false, "False is False");
@@ -148,7 +111,7 @@ TestFalse()
 }
 
 void
-TestTrue()
+TestTrue(void)
 {
         GSTestAssert(true != false, "True is not False");
         GSTestAssert(true == true, "True is True");
@@ -160,14 +123,14 @@ TestTrue()
  ******************************************************************************/
 
 void
-TestCharIsEndOfStream()
+TestCharIsEndOfStream(void)
 {
         GSTestAssert(GSCharIsEndOfStream('\0'), "%c is end of stream", '\0');
         GSTestAssert(!GSCharIsEndOfStream('1'), "%c is not end of stream", '1');
 }
 
 void
-TestCharIsEndOfLine()
+TestCharIsEndOfLine(void)
 {
         char *IsEndOfLine = "\n\r";
         char *NotEndOfLine = "1nrt\t";
@@ -185,7 +148,7 @@ TestCharIsEndOfLine()
 }
 
 void
-TestCharIsWhitespace()
+TestCharIsWhitespace(void)
 {
         char *IsWhitespace = " \t\v\f\n\r";
         char *NotWhitespace = "1ntvfnr0";
@@ -203,7 +166,7 @@ TestCharIsWhitespace()
 }
 
 void
-TestCharIsOctal()
+TestCharIsOctal(void)
 {
         char *IsOctal = "01234567";
         char *NotOctal = "aF89\r\n\t ";
@@ -221,7 +184,7 @@ TestCharIsOctal()
 }
 
 void
-TestCharIsDecimal()
+TestCharIsDecimal(void)
 {
         char *IsDecimal = "0123456789";
         char *NotDecimal = "aAfF\r\n\t ";
@@ -239,7 +202,7 @@ TestCharIsDecimal()
 }
 
 void
-TestCharIsHexadecimal()
+TestCharIsHexadecimal(void)
 {
         char *IsHexadecimal = "0123456789abcdefABCDEF";
         char *NotHexadecimal = "gGhH\r\n\t xX";
@@ -257,7 +220,7 @@ TestCharIsHexadecimal()
 }
 
 void
-TestCharIsAlphabetical()
+TestCharIsAlphabetical(void)
 {
         char *IsAlphabetical = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         char *NotAlphabetical = "01234567890\r\n\t ";
@@ -275,7 +238,7 @@ TestCharIsAlphabetical()
 }
 
 void
-TestCharIsAlphanumeric()
+TestCharIsAlphanumeric(void)
 {
         char *IsAlphanumeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890";
         char *NotAlphanumeric = "-_\r\n\t ";
@@ -293,7 +256,7 @@ TestCharIsAlphanumeric()
 }
 
 void
-TestCharIsUpcase()
+TestCharIsUpcase(void)
 {
         char *Chars = "aA_1wW";
         GSTestAssert(GSCharIsUpcase(*Chars) == false, "%c is not upcase\n", *Chars);
@@ -310,7 +273,7 @@ TestCharIsUpcase()
 }
 
 void
-TestCharUpcase()
+TestCharUpcase(void)
 {
         char *Chars = "aA_1wW";
         GSTestAssert(GSCharUpcase(*Chars) == 'A', "'a' is Upcased to 'A'");
@@ -327,7 +290,7 @@ TestCharUpcase()
 }
 
 void
-TestCharIsDowncase()
+TestCharIsDowncase(void)
 {
         char *Chars = "aA_1wW";
         GSTestAssert(GSCharIsDowncase(*Chars) == true, "%c is downcase\n", *Chars);
@@ -344,7 +307,7 @@ TestCharIsDowncase()
 }
 
 void
-TestCharDowncase()
+TestCharDowncase(void)
 {
         char *Chars = "aA_1wW";
         GSTestAssert(GSCharDowncase(*Chars) == 'a', "'a' is not changed");
@@ -365,7 +328,7 @@ TestCharDowncase()
  ******************************************************************************/
 
 void
-TestStringIsEqual()
+TestStringIsEqual(void)
 {
         GSTestAssert(GSStringIsEqual("Hello", "Hello", GSStringLength("Hello")), "%s is equal to %s", "Hello", "Hello");
         GSTestAssert(GSStringIsEqual("Hello", "Hello there", GSStringLength("Hello")), "%s is equal to %s", "Hello", "Hello there");
@@ -373,14 +336,14 @@ TestStringIsEqual()
 }
 
 void
-TestStringLength()
+TestStringLength(void)
 {
         GSTestAssert(GSStringLength("Hello") == 5, "GSStringLength(\"Hello\") == 5");
         GSTestAssert(GSStringLength("") == 0, "GSStringLength(\"\") == 0");
 }
 
 void
-TestStringCopy()
+TestStringCopy(void)
 {
         char String[512] = { "Hello" };
         GSStringCopy("Bye", String, 3);
@@ -389,7 +352,7 @@ TestStringCopy()
 }
 
 void
-TestStringCopyNoNull()
+TestStringCopyNoNull(void)
 {
         char String[512] = { "Hello" };
         GSStringCopy("Bye", String, 3);
@@ -398,7 +361,7 @@ TestStringCopyNoNull()
 }
 
 void
-TestStringTrimWhitespace()
+TestStringTrimWhitespace(void)
 {
         char String1[512] = { "    Middle   " };
         GSStringTrimWhitespace(String1, 13);
@@ -414,7 +377,7 @@ TestStringTrimWhitespace()
 }
 
 void
-TestStringCapitalize()
+TestStringCapitalize(void)
 {
         char Result[256];
 
@@ -436,7 +399,7 @@ TestStringCapitalize()
 }
 
 void
-TestStringSnakeCaseToCamelCase()
+TestStringSnakeCaseToCamelCase(void)
 {
         int NewSize;
 
@@ -460,7 +423,7 @@ TestStringSnakeCaseToCamelCase()
 }
 
 void
-TestStringCamelCaseToSnakeCase()
+TestStringCamelCaseToSnakeCase(void)
 {
         int NewSize;
 
@@ -487,7 +450,7 @@ TestStringCamelCaseToSnakeCase()
 }
 
 void
-TestStringKeep()
+TestStringKeep(void)
 {
         char String1[512] = { "thisISisAaHIDDENhiddenMESSAGEmessage" };
         char String2[512];
@@ -497,7 +460,7 @@ TestStringKeep()
 }
 
 void
-TestStringReject()
+TestStringReject(void)
 {
         char String1[512] = { "thisISisAaHIDDENhiddenMESSAGEmessage" };
         char String2[512];
@@ -511,21 +474,21 @@ TestStringReject()
  ******************************************************************************/
 
 void
-TestHashMapBytesRequired()
+TestHashMapBytesRequired(void)
 {
         int StringLength = 256;
         int NumElements = 13;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
         size_t Size = sizeof(gs_hash_map) + (StringLength * NumElements) + (sizeof(void *) * NumElements);
         GSTestAssert(NumBytes == Size, "%lu == %lu\n", Size, NumBytes);
 }
 
 void
-TestHashMapInit()
+TestHashMapInit(void)
 {
         int StringLength = 256;
         int NumElements = 13;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
         gs_hash_map *Map = GSHashMapInit(alloca(NumBytes), StringLength, NumElements);
 
         GSTestAssert(Map->Count == 0, "%i == %i\n", Map->Count, 0);
@@ -541,11 +504,11 @@ TestHashMapInit()
 }
 
 void
-TestHashMapGrow()
+TestHashMapGrow(void)
 {
         int StringLength = 256;
         int NumElements = 13;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
 
         void *Memory1 = malloc(NumBytes);
         gs_hash_map *Map = GSHashMapInit(Memory1, StringLength, NumElements);
@@ -566,11 +529,11 @@ TestHashMapGrow()
 }
 
 void
-TestHashMapSet()
+TestHashMapSet(void)
 {
         int StringLength = 256;
         int NumElements = 3;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
         gs_hash_map *Map = GSHashMapInit(alloca(NumBytes), StringLength, NumElements);
 
         char *Keys = "Key1\0Key2\0Key3\0";
@@ -603,11 +566,11 @@ TestHashMapSet()
 }
 
 void
-TestHashMapHasKey()
+TestHashMapHasKey(void)
 {
         int StringLength = 256;
         int NumElements = 3;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
         gs_hash_map *Map = GSHashMapInit(alloca(NumBytes), StringLength, NumElements);
 
         char *Keys = "Key1\0Key2\0Key3\0";
@@ -635,11 +598,11 @@ TestHashMapHasKey()
 }
 
 void
-TestHashMapGet()
+TestHashMapGet(void)
 {
         int StringLength = 256;
         int NumElements = 3;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
         gs_hash_map *Map = GSHashMapInit(alloca(NumBytes), StringLength, NumElements);
 
         char *Keys = "Key1\0Key2\0Key3\0";
@@ -671,11 +634,11 @@ TestHashMapGet()
 }
 
 void
-TestHashMapDelete()
+TestHashMapDelete(void)
 {
         int StringLength = 256;
         int NumElements = 3;
-        size_t NumBytes = GSHashMapBytesRequired(StringLength, NumElements);
+        size_t NumBytes = GSHashMapAllocSize(StringLength, NumElements);
         gs_hash_map *Map = GSHashMapInit(alloca(NumBytes), StringLength, NumElements);
 
         char *Keys = "Key1\0Key2\0Key3\0";
@@ -712,113 +675,113 @@ TestHashMapDelete()
  ******************************************************************************/
 
 void
-TestArgsIsPresent()
+TestArgsIsPresent(void)
 {
         const int Count = 2;
         char *Params[Count];
         Params[0] = "arg1";
         Params[1] = "arg2";
 
-        gs_args Args;
-        GSArgsInit(&Args, Count, Params);
+        gs_args *Args;
+        Args = GSArgsInit(alloca(GSArgsAllocSize()), Count, Params);
 
         char *Wanted = "arg1";
-        gs_bool Result = GSArgsIsPresent(&Args, Wanted);
+        gs_bool Result = GSArgsIsPresent(Args, Wanted);
         GSTestAssert(Result == true, "Arg(%s) is found", Wanted);
 
         Wanted = "arg3";
-        Result = GSArgsIsPresent(&Args, Wanted);
+        Result = GSArgsIsPresent(Args, Wanted);
         GSTestAssert(Result == false, "Arg(%s) is not found", Wanted);
 }
 
 void
-TestArgsFind()
+TestArgsFind(void)
 {
         const int Count = 2;
         char *Params[Count];
         Params[0] = "arg1";
         Params[1] = "arg2";
 
-        gs_args Args;
-        GSArgsInit(&Args, Count, Params);
+        gs_args *Args;
+        Args = GSArgsInit(alloca(GSArgsAllocSize()), Count, Params);
 
         char *Arg = "arg1";
-        int Index = GSArgsFind(&Args, Arg);
+        int Index = GSArgsFind(Args, Arg);
         GSTestAssert(Index == 0, "Arg(%s) is at index(%i)", Arg, Index);
 
         Arg = "arg3";
-        Index = GSArgsFind(&Args, Arg);
+        Index = GSArgsFind(Args, Arg);
         GSTestAssert(Index == -1, "Arg(%s) is not found", Arg);
 }
 
 void
-TestArgsAtIndex()
+TestArgsAtIndex(void)
 {
         const int Count = 2;
         char *Params[Count];
         Params[0] = "arg1";
         Params[1] = "arg2";
 
-        gs_args Args;
-        GSArgsInit(&Args, Count, Params);
+        gs_args *Args;
+        Args = GSArgsInit(alloca(GSArgsAllocSize()), Count, Params);
 
         int Index = 0;
-        char *Arg = GSArgsAtIndex(&Args, Index);
+        char *Arg = GSArgsAtIndex(Args, Index);
         GSTestAssert(GSStringIsEqual(Arg, "arg1", 4), "Arg(%s) is at index(%i)", Arg, Index);
 
         Index = -1;
-        Arg = GSArgsAtIndex(&Args, Index);
+        Arg = GSArgsAtIndex(Args, Index);
         GSTestAssert(Arg == NULL, "Arg(%s) is not found", Arg);
 
         Index = 2;
-        Arg = GSArgsAtIndex(&Args, Index);
+        Arg = GSArgsAtIndex(Args, Index);
         GSTestAssert(Arg == NULL, "Arg(%s) is not found", Arg);
 }
 
 void
-TestArgsAfter()
+TestArgsAfter(void)
 {
         const int Count = 2;
         char *Params[Count];
         Params[0] = "arg1";
         Params[1] = "arg2";
 
-        gs_args Args;
-        GSArgsInit(&Args, Count, Params);
+        gs_args *Args;
+        Args = GSArgsInit(alloca(GSArgsAllocSize()), Count, Params);
 
         char *Arg = "arg1";
-        char *After = GSArgsAfter(&Args, Arg);
+        char *After = GSArgsAfter(Args, Arg);
         GSTestAssert(GSStringIsEqual(After, "arg2", 4), "Arg(%s) follows Arg(%s)", After, Arg);
 
         Arg = "arg2";
-        After = GSArgsAfter(&Args, Arg);
+        After = GSArgsAfter(Args, Arg);
         GSTestAssert(After == NULL, "No argument follows Arg(%s)", Arg);
 
         Arg = "What?";
-        After = GSArgsAfter(&Args, Arg);
+        After = GSArgsAfter(Args, Arg);
         GSTestAssert(After == NULL, "No argument follows Arg(%s)", Arg);
 }
 
 void
-TestArgsHelpWanted()
+TestArgsHelpWanted(void)
 {
         const int Count = 2;
         char *Params[Count];
         Params[0] = "-h";
         Params[1] = "arg2";
 
-        gs_args Args;
-        GSArgsInit(&Args, Count, Params);
+        gs_args *Args;
+        Args = GSArgsInit(alloca(GSArgsAllocSize()), Count, Params);
 
-        gs_bool Result = GSArgsHelpWanted(&Args);
+        gs_bool Result = GSArgsHelpWanted(Args);
         GSTestAssert(Result == true, "-h or --help is present");
 
         Params[0] = "--help";
-        Result = GSArgsHelpWanted(&Args);
+        Result = GSArgsHelpWanted(Args);
         GSTestAssert(Result == true, "-h or --help is present");
 
         Params[0] = "arg1";
-        Result = GSArgsHelpWanted(&Args);
+        Result = GSArgsHelpWanted(Args);
         GSTestAssert(Result == false, "-h or --help is not present");
 }
 
@@ -827,7 +790,7 @@ TestArgsHelpWanted()
  ******************************************************************************/
 
 void
-TestBufferInit()
+TestBufferInit(void)
 {
         gs_buffer Buffer;
         char Memory[25];
@@ -839,7 +802,7 @@ TestBufferInit()
 }
 
 void
-TestBufferIsEOF()
+TestBufferIsEOF(void)
 {
         gs_bool IsEOF;
         gs_buffer Buffer;
@@ -856,7 +819,7 @@ TestBufferIsEOF()
 }
 
 void
-TestBufferNextLine()
+TestBufferNextLine(void)
 {
         gs_buffer Buffer;
         char *Text = "This\nIs\nSome\nText\n";
@@ -869,7 +832,7 @@ TestBufferNextLine()
 }
 
 void
-TestBufferSaveCursor()
+TestBufferSaveCursor(void)
 {
         gs_buffer Buffer;
         char *Text = "This\nIs\nSome\nText\n";
@@ -880,7 +843,7 @@ TestBufferSaveCursor()
 }
 
 void
-TestBufferRestoreCursor()
+TestBufferRestoreCursor(void)
 {
         gs_buffer Buffer;
         char *Text = "This\nIs\nSome\nText\n";
@@ -892,7 +855,7 @@ TestBufferRestoreCursor()
 }
 
 void
-TestFileSize()
+TestFileSize(void)
 {
         FILE *File = fopen("temp.txt", "w");
         fwrite("Test\n", 1, 5, File);
@@ -904,7 +867,7 @@ TestFileSize()
 }
 
 void
-TestFileCopyToBuffer()
+TestFileCopyToBuffer(void)
 {
         FILE *File = fopen("temp.txt", "w");
         fwrite("Test\n", 1, 5, File);
@@ -924,14 +887,6 @@ TestFileCopyToBuffer()
 int
 main(int ArgCount, char **Args)
 {
-        /**********************************************************************
-          gstest
-         **********************************************************************/
-        TestAssert();
-        TestRandomString();
-        /**********************************************************************
-          gslibc
-         **********************************************************************/
         /* Miscellaneous Macros */
         TestNullChar();
         TestNullPtr();

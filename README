@@ -2,3 +2,24 @@ Motivated by stb, this is my own standard library collection.
 
 gs.h     : Standard library. Lots of good stuff. Documentation pending...
 gstest.h : Extremely simple testing helpers. Used in tests.c.
+
+--------------------------------------------------------------------------------
+ Setup and Testing
+--------------------------------------------------------------------------------
+> cd /path/to/project
+> source env/shell
+> make test
+
+--------------------------------------------------------------------------------
+ Usage
+--------------------------------------------------------------------------------
+Simply put the appropriate header file into your C project.
+
+--------------------------------------------------------------------------------
+ License
+--------------------------------------------------------------------------------
+See LICENSE.
+Terms of license copied from Handmade Hero.
+These may change in the future.
+Note: Much of my code is comes from work I do in my `practice' code repo, and
+all of that code is CC BY 4.0.
